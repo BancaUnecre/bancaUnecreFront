@@ -14,7 +14,7 @@ import { empresaClientesService } from '../../services/empresaClientesService';
 import { clientesService } from '../../services/clientesService';
 import { cuentasService } from '../../services/cuentasService';
 
-type Tab = 'datos' | 'clientes';
+type Tab = 'datos' | 'clientes' | 'comercios' | 'info';
 
 interface VincularForm {
   cliente_id: number;

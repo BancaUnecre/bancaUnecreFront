@@ -9,6 +9,8 @@ interface Movimiento {
   id: number;
   folio: string;
   tipo: string;
+  tipo_pago?: string;
+  dias_credito?: number;
   cuenta_origen_id: number;
   cuenta_destino_id: number | null;
   importe: number;

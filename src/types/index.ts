@@ -106,6 +106,8 @@ export interface Cuenta {
   saldo: number;
   saldo_retenido: number;
   limite_credito: number;
+  tasa_credito?: number;
+  dia_corte?: number;
   nivel_cuenta_id: number;
   estatus: number;
 }
@@ -191,6 +193,8 @@ export interface Movimiento {
   fecha: string;
   monto: number;
   tipo: string;
+  tipo_pago?: string;
+  dias_credito?: number;
   autorizacion?: string;
   arqc?: string;
   transaccion_id?: string;

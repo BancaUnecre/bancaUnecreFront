@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Search, CheckCircle2, ChevronRight, CreditCard,
@@ -81,7 +81,7 @@ const AperturaCuenta: React.FC = () => {
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [cuentasCliente, setCuentasCliente] = useState<Cuenta[]>([]);
   const [config, setConfig] = useState<CuentaConfig>({
-    tipo_cuenta: '', moneda: 'MXN', nivel_cuenta_id: 1, saldo: 0, limite_credito: 0, dia_corte: 1,
+    tipo_cuenta: '', moneda: 'MXN', nivel_cuenta_id: 1, saldo: 0, limite_credito: 0, dia_corte: 1, tasa_credito: 0,
   });
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState<{ numero: string; clabe: string; folio: string } | null>(null);
