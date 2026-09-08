@@ -102,7 +102,7 @@ const EmpresaDetalle: React.FC = () => {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [cuentasCliente, setCuentasCliente] = useState<Cuenta[]>([]);
   const [loadingCuentas, setLoadingCuentas] = useState(false);
-  const [vincForm, setVincForm] = useState<VincularForm>({ cliente_id: 0, cuenta_id: 0, modalidades: {
+  const [vincForm, setVincForm] = useState<VincularForm>({ cliente_id: 0, cuenta_id: 0, limite_credito: 0, modalidades: {
         CLIENTE_COMERCIAL: { selected: true, limite: 0 },
         EMPLEADO_NOMINA: { selected: false, limite: 0 },
         EMPLEADO_VIATICOS: { selected: false, limite: 0 }
@@ -289,7 +289,7 @@ const EmpresaDetalle: React.FC = () => {
         setSelectedCliente(null);
         setClienteSearch('');
 
-      setVincForm({ cliente_id: 0, cuenta_id: 0, modalidades: {
+      setVincForm({ cliente_id: 0, cuenta_id: 0, limite_credito: 0, modalidades: {
         CLIENTE_COMERCIAL: { selected: true, limite: 0 },
         EMPLEADO_NOMINA: { selected: false, limite: 0 },
         EMPLEADO_VIATICOS: { selected: false, limite: 0 }
@@ -337,7 +337,7 @@ const EmpresaDetalle: React.FC = () => {
     setSelectedCliente(null);
     setClienteSearch('');
     setCuentasCliente([]);
-    setVincForm({ cliente_id: 0, cuenta_id: 0, modalidades: {
+    setVincForm({ cliente_id: 0, cuenta_id: 0, limite_credito: 0, modalidades: {
         CLIENTE_COMERCIAL: { selected: true, limite: 0 },
         EMPLEADO_NOMINA: { selected: false, limite: 0 },
         EMPLEADO_VIATICOS: { selected: false, limite: 0 }
