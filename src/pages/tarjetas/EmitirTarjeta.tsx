@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Loader2, CreditCard, AlertCircle, ArrowLeft, QrCode } from 'lucide-react';
 import QRCode from 'react-qr-code';
@@ -25,7 +25,7 @@ const EmitirTarjeta = () => {
       const fetchClient = async () => {
         try {
           const res = await clientesService.getById(Number(clientIdParam));
-          setSelectedCliente(res.data.data ? res.data.data : res.data);
+          setSelectedCliente((res.data as any).data ? (res.data as any).data : res.data);
         } catch(e) {
           setError('No se pudo cargar el cliente seleccionado');
         }
@@ -83,7 +83,7 @@ const EmitirTarjeta = () => {
           Volver
         </button>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2"><CreditCard className="text-indigo-600" />Emisión de Tarjeta (Autorización Dual)</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2"><CreditCard className="text-indigo-600" />EmisiÃ³n de Tarjeta (AutorizaciÃ³n Dual)</h1>
 
         {!qrData ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -133,13 +133,13 @@ const EmitirTarjeta = () => {
 
             {selectedCliente && (
               <div className="mt-6 border-t pt-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4">2. Confirmar Emisión</h2>
+                <h2 className="text-lg font-semibold text-gray-800 mb-4">2. Confirmar EmisiÃ³n</h2>
                 <div className="p-4 bg-indigo-50 border border-indigo-100 rounded-lg mb-6">
                   <div className="font-semibold text-indigo-900">Cliente Seleccionado:</div>
                   <div className="text-indigo-800 text-lg">
                     {selectedCliente.nombre} {selectedCliente.apellido_paterno}
                   </div>
-                  <div className="text-indigo-600 text-sm mt-1">Se generará un número de 16 dígitos y un token dinámico.</div>
+                  <div className="text-indigo-600 text-sm mt-1">Se generarÃ¡ un nÃºmero de 16 dÃ­gitos y un token dinÃ¡mico.</div>
                 </div>
 
                 <div className="flex justify-end gap-3">
@@ -149,7 +149,7 @@ const EmitirTarjeta = () => {
                   >
                     Cancelar
                   </button>
-                  <button onClick={handleEmitir} disabled={generating} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">{generating ? <Loader2 className="animate-spin" size={20} /> : <QrCode size={20} />} Generar QR de Autorización</button>
+                  <button onClick={handleEmitir} disabled={generating} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2">{generating ? <Loader2 className="animate-spin" size={20} /> : <QrCode size={20} />} Generar QR de AutorizaciÃ³n</button>
                 </div>
               </div>
             )}
@@ -161,7 +161,7 @@ const EmitirTarjeta = () => {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Paso Final</h2>
             <p className="text-gray-600 mb-8">
-              La tarjeta se ha generado en el servidor. Pï¿½dele al cajero que escanee este cï¿½digo con la terminal Urovo para quemar el chip plï¿½stico.
+              La tarjeta se ha generado en el servidor. PÃ¯Â¿Â½dele al cajero que escanee este cÃ¯Â¿Â½digo con la terminal Urovo para quemar el chip plÃ¯Â¿Â½stico.
             </p>
 
             <div className="bg-white p-4 border border-gray-200 rounded-xl inline-block mb-8 shadow-sm">
@@ -169,7 +169,7 @@ const EmitirTarjeta = () => {
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 text-left border border-gray-200">
-              <p className="text-sm text-gray-500 font-semibold mb-1">Datos Tï¿½cnicos (Solo Lectura):</p>
+              <p className="text-sm text-gray-500 font-semibold mb-1">Datos TÃ¯Â¿Â½cnicos (Solo Lectura):</p>
               <p className="text-xs text-gray-600 font-mono">PAN: {tarjetaData?.numero_tarjeta}</p>
               <p className="text-xs text-gray-600 font-mono">Vence: {tarjetaData?.fecha_vencimiento}</p>
               <p className="text-xs text-gray-600 font-mono break-all">Token: {tarjetaData?.token_dinamico}</p>

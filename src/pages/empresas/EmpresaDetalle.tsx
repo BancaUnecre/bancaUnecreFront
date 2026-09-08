@@ -18,6 +18,7 @@ type Tab = 'datos' | 'clientes' | 'comercios' | 'info';
 
 interface VincularForm {
   cliente_id: number;
+  limite_credito: number;
   cuenta_id: number;
   modalidades: {
     CLIENTE_COMERCIAL: { selected: boolean; limite: number };
