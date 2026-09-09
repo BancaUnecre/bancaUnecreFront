@@ -154,16 +154,38 @@ const ConfiguracionGeneral: React.FC = () => {
           <div className="flex items-center justify-between border-b border-gray-100 pb-3">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <RefreshCw size={20} className="text-emerald-500" />
-              Auditoría de Crons (Tareas Automáticas)
+              Gestión y Auditoría de Crons
             </h2>
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> MOTOR ACTIVO
-              </span>
+              <span className="text-sm font-medium text-gray-700">Interruptor Maestro:</span>
+              <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-emerald-500 transition-colors">
+                <span className="inline-block h-4 w-4 translate-x-6 transform rounded-full bg-white transition-transform"></span>
+              </button>
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">Limpieza Vales Caducados</p>
+                <p className="text-xs text-gray-500">Ejecución: Cada hora en punto</p>
+              </div>
+              <button className="relative inline-flex h-5 w-9 items-center rounded-full bg-emerald-500 transition-colors">
+                <span className="inline-block h-3 w-3 translate-x-5 transform rounded-full bg-white transition-transform"></span>
+              </button>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">Proceso Nocturno (Cobranza)</p>
+                <p className="text-xs text-gray-500">Ejecución: Todos los días a la 01:00 AM</p>
+              </div>
+              <button className="relative inline-flex h-5 w-9 items-center rounded-full bg-emerald-500 transition-colors">
+                <span className="inline-block h-3 w-3 translate-x-5 transform rounded-full bg-white transition-transform"></span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto mt-4">
             <table className="w-full text-left text-sm text-gray-600">
               <thead className="text-xs uppercase bg-gray-50 text-gray-500">
                 <tr>
