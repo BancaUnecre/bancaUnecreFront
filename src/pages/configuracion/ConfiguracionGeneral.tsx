@@ -14,6 +14,7 @@ const ConfiguracionGeneral: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [mostrarEliminadosIT, setMostrarEliminadosIT] = useState(false);
   const [mostrarEliminadosEje, setMostrarEliminadosEje] = useState(false);
+  const [mantenimientoActivo, setMantenimientoActivo] = useState(false);
 
   const agregarCorreo = (tipo: 'IT' | 'EJECUTIVO', correo: string) => {
     if (!correo.trim()) return;
@@ -66,11 +67,18 @@ const ConfiguracionGeneral: React.FC = () => {
               </p>
             </div>
 
-            <div className="space-y-3 mt-4">
+            <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700">Modo Mantenimiento</label>
-              <div className="flex items-center gap-2 mt-1">
-                <input type="checkbox" className="w-4 h-4 text-primary-600 rounded" />
-                <span className="text-sm text-gray-600">Activar página de mantenimiento para cajeros</span>
+              <div className="mt-2 flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 text-primary-600 rounded" 
+                  checked={mantenimientoActivo}
+                  onChange={(e) => setMantenimientoActivo(e.target.checked)}
+                />
+                <span className={`text-sm ${mantenimientoActivo ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+                  {mantenimientoActivo ? 'SISTEMA EN MANTENIMIENTO (CAJEROS BLOQUEADOS)' : 'Activar página de mantenimiento para cajeros'}
+                </span>
               </div>
             </div>
           </div>
