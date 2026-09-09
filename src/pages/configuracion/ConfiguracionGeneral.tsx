@@ -12,6 +12,7 @@ const ConfiguracionGeneral: React.FC = () => {
   const [nuevoCorreoIT, setNuevoCorreoIT] = useState('');
   const [nuevoCorreoEje, setNuevoCorreoEje] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [mostrarEliminadosCorreos, setMostrarEliminadosCorreos] = useState(false);
 
   const agregarCorreo = (tipo: 'IT' | 'EJECUTIVO', correo: string) => {
     if (!correo.trim()) return;
@@ -107,10 +108,24 @@ const ConfiguracionGeneral: React.FC = () => {
 
         {/* Panel 2: Alertas */}
         <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
-            <Bell size={20} className="text-amber-500" />
-            Correos de Notificación
-          </h2>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Bell size={20} className="text-amber-500" />
+              Correos de Notificación
+            </h2>
+            <div className="flex items-center gap-2">
+              <input 
+                type="checkbox" 
+                id="mostrarEliminados" 
+                className="w-4 h-4 text-primary-600 rounded"
+                checked={mostrarEliminadosCorreos}
+                onChange={(e) => setMostrarEliminadosCorreos(e.target.checked)}
+              />
+              <label htmlFor="mostrarEliminados" className="text-xs text-gray-600 cursor-pointer">
+                Mostrar eliminados
+              </label>
+            </div>
+          </div>
           
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700">Alertas IT / Errores</label>
@@ -119,7 +134,7 @@ const ConfiguracionGeneral: React.FC = () => {
               <button type="button" onClick={() => agregarCorreo('IT', nuevoCorreoIT)} className="btn-secondary px-3"><Plus size={18} /></button>
             </div>
             <ul className="mt-2 space-y-2">
-              {correosIT.map(c => (
+              {correosIT.filter(c => c.activo || mostrarEliminadosCorreos).map(c => (
                 <li key={c.id} className={`flex items-center justify-between p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100 text-red-500 line-through opacity-70'}`}>
                   <span>{c.correo}</span>
                   <button onClick={() => toggleCorreoActivo(c.id)} className={`p-1 rounded hover:bg-gray-200 transition-colors ${c.activo ? 'text-red-500' : 'text-emerald-600'}`} title={c.activo ? 'Eliminar (Desactivar)' : 'Restaurar'}>
@@ -137,7 +152,7 @@ const ConfiguracionGeneral: React.FC = () => {
               <button type="button" onClick={() => agregarCorreo('EJECUTIVO', nuevoCorreoEje)} className="btn-secondary px-3"><Plus size={18} /></button>
             </div>
             <ul className="mt-2 space-y-2">
-              {correosEje.map(c => (
+              {correosEje.filter(c => c.activo || mostrarEliminadosCorreos).map(c => (
                 <li key={c.id} className={`flex items-center justify-between p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100 text-red-500 line-through opacity-70'}`}>
                   <span>{c.correo}</span>
                   <button onClick={() => toggleCorreoActivo(c.id)} className={`p-1 rounded hover:bg-gray-200 transition-colors ${c.activo ? 'text-red-500' : 'text-emerald-600'}`} title={c.activo ? 'Eliminar (Desactivar)' : 'Restaurar'}>
