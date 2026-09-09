@@ -201,7 +201,7 @@ const ConfiguracionGeneral: React.FC = () => {
                 <input 
                   type={showPassword ? 'text' : 'password'} 
                   className="input-field pr-10" 
-                  defaultValue="Saiyuk02." 
+                  defaultValue="hxzc skbf bbew mmze" 
                 />
                 <button 
                   type="button" 
