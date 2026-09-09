@@ -149,22 +149,58 @@ const ConfiguracionGeneral: React.FC = () => {
           </div>
         </div>
 
-        {/* Panel 3: Tareas Automáticas */}
+        {/* Panel 3: Tareas Automáticas (Historial de Crons) */}
         <div className="card p-6 space-y-4 md:col-span-2">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
-            <RefreshCw size={20} className="text-emerald-500" />
-            Tareas en Segundo Plano (Crons)
-          </h2>
-          
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div>
-              <p className="font-semibold text-gray-800">Motor de Crons</p>
-              <p className="text-sm text-gray-500">Ejecución automática de vales vencidos y reportes.</p>
-            </div>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <RefreshCw size={20} className="text-emerald-500" />
+              Auditoría de Crons (Tareas Automáticas)
+            </h2>
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold">ACTIVO</span>
-              <button className="btn-secondary text-xs py-1">Pausar Motor</button>
+              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> MOTOR ACTIVO
+              </span>
             </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-gray-600">
+              <thead className="text-xs uppercase bg-gray-50 text-gray-500">
+                <tr>
+                  <th className="px-4 py-3">Cron</th>
+                  <th className="px-4 py-3">Fecha de Ejecución</th>
+                  <th className="px-4 py-3">Estado</th>
+                  <th className="px-4 py-3">Resultado / Filas Afectadas / Tiempo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {/* Registros de ejemplo (Placeholder hasta conectar API) */}
+                <tr className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">Limpieza Vales Caducados</td>
+                  <td className="px-4 py-3">Hoy, 11:00 AM</td>
+                  <td className="px-4 py-3"><span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">Éxito</span></td>
+                  <td className="px-4 py-3">Se cancelaron 12 vales caducados y se devolvieron los fondos. Tiempo: 0.35s</td>
+                </tr>
+                <tr className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">Limpieza Vales Caducados</td>
+                  <td className="px-4 py-3">Hoy, 10:00 AM</td>
+                  <td className="px-4 py-3"><span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">Éxito</span></td>
+                  <td className="px-4 py-3">No hubo vales pendientes. Tiempo: 0.12s</td>
+                </tr>
+                <tr className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">Proceso Nocturno</td>
+                  <td className="px-4 py-3">Ayer, 01:00 AM</td>
+                  <td className="px-4 py-3"><span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">Éxito</span></td>
+                  <td className="px-4 py-3">Cortes mensuales ejecutados. Reporte CSV generado con 45 deudores. Tiempo total: 2.40s</td>
+                </tr>
+                <tr className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-gray-900">Proceso Nocturno</td>
+                  <td className="px-4 py-3">Hace 2 días, 01:00 AM</td>
+                  <td className="px-4 py-3"><span className="text-red-600 font-semibold bg-red-50 px-2 py-1 rounded">Fallo</span></td>
+                  <td className="px-4 py-3">Error en proceso nocturno: ECONNREFUSED 127.0.0.1:1433</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
