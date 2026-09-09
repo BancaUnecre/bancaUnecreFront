@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 
-interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; }
+interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; eliminado_por?: string; fecha_eliminacion?: string; ip_eliminacion?: string; }
 
 const ConfiguracionGeneral: React.FC = () => {
   const [correos, setCorreos] = useState<Correo[]>([
@@ -135,11 +135,18 @@ const ConfiguracionGeneral: React.FC = () => {
             </div>
             <ul className="mt-2 space-y-2">
               {correosIT.filter(c => c.activo || mostrarEliminadosCorreos).map(c => (
-                <li key={c.id} className={`flex items-center justify-between p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100 text-red-500 line-through opacity-70'}`}>
-                  <span>{c.correo}</span>
-                  <button onClick={() => toggleCorreoActivo(c.id)} className={`p-1 rounded hover:bg-gray-200 transition-colors ${c.activo ? 'text-red-500' : 'text-emerald-600'}`} title={c.activo ? 'Eliminar (Desactivar)' : 'Restaurar'}>
-                    {c.activo ? <Trash2 size={15} /> : <RefreshCw size={15} />}
-                  </button>
+                <li key={c.id} className={`flex flex-col p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className={!c.activo ? 'text-red-500 line-through opacity-70' : ''}>{c.correo}</span>
+                    <button onClick={() => toggleCorreoActivo(c.id)} className={`p-1 rounded hover:bg-gray-200 transition-colors ${c.activo ? 'text-red-500' : 'text-emerald-600'}`} title={c.activo ? 'Eliminar (Desactivar)' : 'Restaurar'}>
+                      {c.activo ? <Trash2 size={15} /> : <RefreshCw size={15} />}
+                    </button>
+                  </div>
+                  {!c.activo && (
+                    <div className="mt-1 text-[10px] text-red-400 font-medium bg-red-100/50 p-1 rounded">
+                      Eliminado por: {c.eliminado_por || 'Admin'} el {c.fecha_eliminacion || 'Hoy'} (IP: {c.ip_eliminacion || '127.0.0.1'})
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -153,11 +160,18 @@ const ConfiguracionGeneral: React.FC = () => {
             </div>
             <ul className="mt-2 space-y-2">
               {correosEje.filter(c => c.activo || mostrarEliminadosCorreos).map(c => (
-                <li key={c.id} className={`flex items-center justify-between p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100 text-red-500 line-through opacity-70'}`}>
-                  <span>{c.correo}</span>
-                  <button onClick={() => toggleCorreoActivo(c.id)} className={`p-1 rounded hover:bg-gray-200 transition-colors ${c.activo ? 'text-red-500' : 'text-emerald-600'}`} title={c.activo ? 'Eliminar (Desactivar)' : 'Restaurar'}>
-                    {c.activo ? <Trash2 size={15} /> : <RefreshCw size={15} />}
-                  </button>
+                <li key={c.id} className={`flex flex-col p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className={!c.activo ? 'text-red-500 line-through opacity-70' : ''}>{c.correo}</span>
+                    <button onClick={() => toggleCorreoActivo(c.id)} className={`p-1 rounded hover:bg-gray-200 transition-colors ${c.activo ? 'text-red-500' : 'text-emerald-600'}`} title={c.activo ? 'Eliminar (Desactivar)' : 'Restaurar'}>
+                      {c.activo ? <Trash2 size={15} /> : <RefreshCw size={15} />}
+                    </button>
+                  </div>
+                  {!c.activo && (
+                    <div className="mt-1 text-[10px] text-red-400 font-medium bg-red-100/50 p-1 rounded">
+                      Eliminado por: {c.eliminado_por || 'Admin'} el {c.fecha_eliminacion || 'Hoy'} (IP: {c.ip_eliminacion || '127.0.0.1'})
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
