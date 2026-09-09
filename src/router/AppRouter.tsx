@@ -1,4 +1,4 @@
-﻿import EmitirTarjeta from '../pages/tarjetas/EmitirTarjeta';
+import EmitirTarjeta from '../pages/tarjetas/EmitirTarjeta';
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ import RetiroCuenta from '../pages/operaciones/RetiroCuenta';
 import Cobranza from '../pages/operaciones/Cobranza';
 import AbonosCredito from '../pages/operaciones/AbonosCredito';
 import AutorizarVales from '../pages/operaciones/AutorizarVales';
+import ConfiguracionGeneral from '../pages/configuracion/ConfiguracionGeneral';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -72,6 +73,7 @@ const AppRouter: React.FC = () => {
           <Route path="operaciones/retiro" element={<RetiroCuenta />} />
           <Route path="operaciones/cobranza" element={<Cobranza />} />
           <Route path="operaciones/abonos-credito" element={<AbonosCredito />} />
+          <Route path="configuracion" element={<ConfiguracionGeneral />} />
         </Route>
         <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />} />
       </Routes>

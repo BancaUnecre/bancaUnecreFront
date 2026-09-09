@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Users, BookOpen, ChevronDown, ChevronRight,
   MapPin, CreditCard, Shield, Briefcase, IdCard, Building2,
   Factory, ArrowLeftRight, FileBarChart2, Globe, PlusCircle, Activity, ArrowDownCircle, ArrowUpCircle,
-  ListOrdered, UserCog, QrCode, ShieldCheck, MonitorSmartphone
+  ListOrdered, UserCog, QrCode, ShieldCheck, MonitorSmartphone, Settings
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -154,6 +154,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               
               <NavLink to="/usuarios" className={navLinkClass} onClick={onClose}>
                 <UserCog size={18} />Usuarios del Sistema
+              </NavLink>
+              
+              <NavLink to="/configuracion" className={navLinkClass} onClick={onClose}>
+                <Settings size={18} />Configuración
               </NavLink>
             </>
           )}
