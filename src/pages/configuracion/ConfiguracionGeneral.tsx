@@ -147,7 +147,10 @@ const ConfiguracionGeneral: React.FC = () => {
     setProcesandoMantenimiento(true);
     try {
       const { default: api } = await import('../../services/api');
-      const res = await api.put('/configuracion/mantenimiento', { activo: false });
+      const res = await api.put('/configuracion/mantenimiento', { 
+        activo: false,
+        iniciado_por: iniciadoPorInput 
+      });
       if (res.data && res.data.success) {
         setMantenimientoActivo(false);
         setMantenimientoMotivo('');
