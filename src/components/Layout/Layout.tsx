@@ -22,7 +22,16 @@ const Layout: React.FC = () => {
 
     checkMantenimiento();
     const interval = setInterval(checkMantenimiento, 15000);
-    return () => clearInterval(interval);
+
+    const onMantenimientoChange = (e: any) => {
+      setMantenimiento(!!e.detail);
+    };
+    window.addEventListener('mantenimiento-changed', onMantenimientoChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('mantenimiento-changed', onMantenimientoChange);
+    };
   }, []);
 
   return (

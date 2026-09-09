@@ -135,6 +135,7 @@ const ConfiguracionGeneral: React.FC = () => {
         setMantenimientoIniciadoPor(res.data.mantenimiento_iniciado_por);
         setMantenimientoFechaInicio(res.data.mantenimiento_fecha_inicio);
         setModalMantenimientoOpen(false);
+        window.dispatchEvent(new CustomEvent('mantenimiento-changed', { detail: true }));
       }
     } catch (err: any) {
       alert('Error activando mantenimiento: ' + (err.response?.data?.error || err.message));
@@ -156,6 +157,7 @@ const ConfiguracionGeneral: React.FC = () => {
         setMantenimientoMotivo('');
         setMantenimientoIniciadoPor('');
         setMantenimientoFechaInicio('');
+        window.dispatchEvent(new CustomEvent('mantenimiento-changed', { detail: false }));
       }
     } catch (err: any) {
       alert('Error desactivando mantenimiento: ' + (err.response?.data?.error || err.message));
