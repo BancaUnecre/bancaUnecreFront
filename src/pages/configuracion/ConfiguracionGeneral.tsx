@@ -44,29 +44,49 @@ const ConfiguracionGeneral: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Panel 1: Entorno */}
-        <div className="card p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
-            <Server size={20} className="text-blue-500" />
-            Entorno del Sistema
-          </h2>
-          
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Entorno Activo</label>
-            <select className="input-field">
-              <option value="Pruebas">Pruebas (QA)</option>
-              <option value="Produccion">Producción (Live)</option>
-            </select>
-            <p className="text-xs text-gray-500">
-              Precaución: Cambiar el entorno requiere reiniciar el backend.
-            </p>
+        {/* Panel 1: Entorno y Conexiones */}
+        <div className="card p-6 space-y-6">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
+              <Server size={20} className="text-blue-500" />
+              Entorno del Sistema
+            </h2>
+            
+            <div className="space-y-3 mt-4">
+              <label className="block text-sm font-medium text-gray-700">Entorno Activo</label>
+              <select className="input-field">
+                <option value="Pruebas">Pruebas (QA)</option>
+                <option value="Produccion">Producción (Live)</option>
+              </select>
+              <p className="text-xs text-gray-500">
+                Precaución: Cambiar el entorno requiere reiniciar el backend.
+              </p>
+            </div>
+
+            <div className="space-y-3 mt-4">
+              <label className="block text-sm font-medium text-gray-700">Modo Mantenimiento</label>
+              <div className="flex items-center gap-2 mt-1">
+                <input type="checkbox" className="w-4 h-4 text-primary-600 rounded" />
+                <span className="text-sm text-gray-600">Activar página de mantenimiento para cajeros</span>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Modo Mantenimiento</label>
-            <div className="flex items-center gap-2 mt-1">
-              <input type="checkbox" className="w-4 h-4 text-primary-600 rounded" />
-              <span className="text-sm text-gray-600">Activar página de mantenimiento para cajeros</span>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
+              <Key size={20} className="text-purple-500" />
+              Credenciales de Envío SMTP
+            </h2>
+            
+            <div className="space-y-3 mt-4">
+              <label className="block text-sm font-medium text-gray-700">Usuario SMTP (Correo Saliente)</label>
+              <input type="email" className="input-field" defaultValue="meny8083@gmail.com" />
+            </div>
+
+            <div className="space-y-3 mt-4">
+              <label className="block text-sm font-medium text-gray-700">Contraseña SMTP (App Password)</label>
+              <input type="password" className="input-field" defaultValue="Saiyuk02." />
+              <p className="text-xs text-gray-500">Si usas Gmail, debes generar una contraseña de aplicación en tu cuenta de Google.</p>
             </div>
           </div>
         </div>
