@@ -15,6 +15,42 @@ const ConfiguracionGeneral: React.FC = () => {
   const [mostrarEliminadosIT, setMostrarEliminadosIT] = useState(false);
   const [mostrarEliminadosEje, setMostrarEliminadosEje] = useState(false);
   const [mantenimientoActivo, setMantenimientoActivo] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
+  React.useEffect(() => {
+    import('../../services/api').then(({ default: api }) => {
+      api.get('/configuracion/status')
+        .then(res => {
+          if (res.data && typeof res.data.mantenimiento_activo === 'boolean') {
+            setMantenimientoActivo(res.data.mantenimiento_activo);
+          }
+        })
+        .catch(err => console.error('Error cargando estado de mantenimiento:', err));
+    });
+  }, []);
+
+  const handleToggleMantenimiento = async (activo: boolean) => {
+    setMantenimientoActivo(activo);
+    try {
+      const { default: api } = await import('../../services/api');
+      await api.put('/configuracion/mantenimiento', { activo });
+    } catch (err) {
+      console.error('Error al actualizar mantenimiento:', err);
+    }
+  };
+
+  const handleGuardarCambios = async () => {
+    setGuardando(true);
+    try {
+      const { default: api } = await import('../../services/api');
+      await api.put('/configuracion/mantenimiento', { activo: mantenimientoActivo });
+      alert('Configuración guardada exitosamente.');
+    } catch (err) {
+      alert('Error guardando cambios.');
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const agregarCorreo = (tipo: 'IT' | 'EJECUTIVO', correo: string) => {
     if (!correo.trim()) return;
@@ -41,9 +77,13 @@ const ConfiguracionGeneral: React.FC = () => {
             Ajustes globales del sistema, correos, y variables de entorno
           </p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        <button 
+          onClick={handleGuardarCambios}
+          disabled={guardando}
+          className="btn-primary flex items-center gap-2"
+        >
           <Save size={18} />
-          Guardar Cambios
+          {guardando ? 'Guardando...' : 'Guardar Cambios'}
         </button>
       </div>
 
@@ -72,9 +112,9 @@ const ConfiguracionGeneral: React.FC = () => {
               <div className="mt-2 flex items-center gap-2">
                 <input 
                   type="checkbox" 
-                  className="w-4 h-4 text-primary-600 rounded" 
+                  className="w-4 h-4 text-primary-600 rounded cursor-pointer" 
                   checked={mantenimientoActivo}
-                  onChange={(e) => setMantenimientoActivo(e.target.checked)}
+                  onChange={(e) => handleToggleMantenimiento(e.target.checked)}
                 />
                 <span className={`text-sm ${mantenimientoActivo ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
                   {mantenimientoActivo ? 'SISTEMA EN MANTENIMIENTO (CAJEROS BLOQUEADOS)' : 'Activar página de mantenimiento para cajeros'}
