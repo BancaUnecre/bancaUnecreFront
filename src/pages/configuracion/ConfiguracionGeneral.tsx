@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2 } from 'lucide-react';
+import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
 
 interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; }
 
@@ -11,6 +11,7 @@ const ConfiguracionGeneral: React.FC = () => {
   ]);
   const [nuevoCorreoIT, setNuevoCorreoIT] = useState('');
   const [nuevoCorreoEje, setNuevoCorreoEje] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const agregarCorreo = (tipo: 'IT' | 'EJECUTIVO', correo: string) => {
     if (!correo.trim()) return;
@@ -85,7 +86,20 @@ const ConfiguracionGeneral: React.FC = () => {
 
             <div className="space-y-3 mt-4">
               <label className="block text-sm font-medium text-gray-700">Contraseña SMTP (App Password)</label>
-              <input type="password" className="input-field" defaultValue="Saiyuk02." />
+              <div className="relative">
+                <input 
+                  type={showPassword ? 'text' : 'password'} 
+                  className="input-field pr-10" 
+                  defaultValue="Saiyuk02." 
+                />
+                <button 
+                  type="button" 
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               <p className="text-xs text-gray-500">Si usas Gmail, debes generar una contraseña de aplicación en tu cuenta de Google.</p>
             </div>
           </div>
