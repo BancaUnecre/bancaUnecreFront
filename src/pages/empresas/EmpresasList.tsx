@@ -15,7 +15,7 @@ const EmpresasList: React.FC = () => {
   const [page, setPage] = useState(1);
   const [deleteItem, setDeleteItem] = useState<Empresa | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [mostrarInactivas, setMostrarInactivas] = useState(false);
+  const [filtroEstatus, setFiltroEstatus] = useState<'activas' | 'inactivas' | 'todas'>('activas');
 
   const limit = 20;
 
@@ -23,7 +23,7 @@ const EmpresasList: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await empresasService.getAll({ page, limit, buscar: search || undefined, todas: mostrarInactivas });
+      const res = await empresasService.getAll({ page, limit, buscar: search || undefined, estatus: filtroEstatus });
       const raw = res.data as any;
       const items: Empresa[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
       setData(items);
@@ -33,7 +33,7 @@ const EmpresasList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search, mostrarInactivas]);
+  }, [page, search, filtroEstatus]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -99,15 +99,15 @@ const EmpresasList: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              checked={mostrarInactivas}
-              onChange={(e) => setMostrarInactivas(e.target.checked)}
-            />
-            Mostrar eliminadas
-          </label>
+          <select
+            className="rounded-lg border-gray-300 text-sm focus:ring-primary-500 focus:border-primary-500 shadow-sm"
+            value={filtroEstatus}
+            onChange={(e) => setFiltroEstatus(e.target.value as any)}
+          >
+            <option value="activas">Solo empresas activas</option>
+            <option value="todas">Empresas activas e inactivas</option>
+            <option value="inactivas">Mostrar solo inactivas</option>
+          </select>
           <button onClick={loadData} className="btn-secondary" disabled={loading}>
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </button>

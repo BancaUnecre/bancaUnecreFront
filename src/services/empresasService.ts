@@ -7,7 +7,7 @@ export interface EmpresasListParams {
   page?: number;
   limit?: number;
   buscar?: string;
-  todas?: boolean;
+  estatus?: 'activas' | 'inactivas' | 'todas';
 }
 
 export interface PaginatedEmpresas {
