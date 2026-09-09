@@ -39,12 +39,26 @@ const ConfiguracionGeneral: React.FC = () => {
   const [catalogoCrons, setCatalogoCrons] = useState<CatalogoCronItem[]>([]);
   const [historialCrons, setHistorialCrons] = useState<RegistroCronItem[]>([]);
 
+  // Estados de Auditoría de Mantenimiento
+  const [mantenimientoMotivo, setMantenimientoMotivo] = useState('');
+  const [mantenimientoIniciadoPor, setMantenimientoIniciadoPor] = useState('');
+  const [mantenimientoFechaInicio, setMantenimientoFechaInicio] = useState('');
+
+  // Modal para capturar motivo
+  const [modalMantenimientoOpen, setModalMantenimientoOpen] = useState(false);
+  const [motivoInput, setMotivoInput] = useState('');
+  const [iniciadoPorInput, setIniciadoPorInput] = useState('Administrador TI (Meny)');
+  const [procesandoMantenimiento, setProcesandoMantenimiento] = useState(false);
+
   React.useEffect(() => {
     import('../../services/api').then(({ default: api }) => {
       api.get('/configuracion/status')
         .then(res => {
-          if (res.data && typeof res.data.mantenimiento_activo === 'boolean') {
-            setMantenimientoActivo(res.data.mantenimiento_activo);
+          if (res.data) {
+            setMantenimientoActivo(!!res.data.mantenimiento_activo);
+            setMantenimientoMotivo(res.data.mantenimiento_motivo || '');
+            setMantenimientoIniciadoPor(res.data.mantenimiento_iniciado_por || '');
+            setMantenimientoFechaInicio(res.data.mantenimiento_fecha_inicio || '');
           }
         })
         .catch(err => console.error('Error cargando estado de mantenimiento:', err));
@@ -90,13 +104,60 @@ const ConfiguracionGeneral: React.FC = () => {
     return frec;
   };
 
-  const handleToggleMantenimiento = async (activo: boolean) => {
-    setMantenimientoActivo(activo);
+  const handleClickCheckboxMantenimiento = () => {
+    if (!mantenimientoActivo) {
+      setMotivoInput('');
+      setModalMantenimientoOpen(true);
+    } else {
+      if (window.confirm('¿Deseas finalizar el Modo Mantenimiento y reanudar operaciones en terminales POS?')) {
+        handleDesactivarMantenimiento();
+      }
+    }
+  };
+
+  const handleConfirmarActivarMantenimiento = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!motivoInput.trim()) {
+      alert('Debes ingresar el motivo del mantenimiento obligatoriamente.');
+      return;
+    }
+    setProcesandoMantenimiento(true);
     try {
       const { default: api } = await import('../../services/api');
-      await api.put('/configuracion/mantenimiento', { activo });
-    } catch (err) {
-      console.error('Error al actualizar mantenimiento:', err);
+      const res = await api.put('/configuracion/mantenimiento', {
+        activo: true,
+        motivo: motivoInput.trim(),
+        iniciado_por: iniciadoPorInput.trim()
+      });
+      if (res.data && res.data.success) {
+        setMantenimientoActivo(true);
+        setMantenimientoMotivo(res.data.mantenimiento_motivo);
+        setMantenimientoIniciadoPor(res.data.mantenimiento_iniciado_por);
+        setMantenimientoFechaInicio(res.data.mantenimiento_fecha_inicio);
+        setModalMantenimientoOpen(false);
+      }
+    } catch (err: any) {
+      alert('Error activando mantenimiento: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setProcesandoMantenimiento(false);
+    }
+  };
+
+  const handleDesactivarMantenimiento = async () => {
+    setProcesandoMantenimiento(true);
+    try {
+      const { default: api } = await import('../../services/api');
+      const res = await api.put('/configuracion/mantenimiento', { activo: false });
+      if (res.data && res.data.success) {
+        setMantenimientoActivo(false);
+        setMantenimientoMotivo('');
+        setMantenimientoIniciadoPor('');
+        setMantenimientoFechaInicio('');
+      }
+    } catch (err: any) {
+      alert('Error desactivando mantenimiento: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setProcesandoMantenimiento(false);
     }
   };
 
@@ -175,12 +236,24 @@ const ConfiguracionGeneral: React.FC = () => {
                   type="checkbox" 
                   className="w-4 h-4 text-primary-600 rounded cursor-pointer" 
                   checked={mantenimientoActivo}
-                  onChange={(e) => handleToggleMantenimiento(e.target.checked)}
+                  onChange={handleClickCheckboxMantenimiento}
+                  disabled={procesandoMantenimiento}
                 />
                 <span className={`text-sm ${mantenimientoActivo ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
                   {mantenimientoActivo ? 'SISTEMA EN MANTENIMIENTO (CAJEROS BLOQUEADOS)' : 'Activar página de mantenimiento para cajeros'}
                 </span>
               </div>
+
+              {mantenimientoActivo && (
+                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 space-y-1">
+                  <p className="font-bold flex items-center gap-1">
+                    <AlertCircle size={14} /> Mantenimiento en curso
+                  </p>
+                  <p><span className="font-semibold">Motivo:</span> {mantenimientoMotivo || 'Sin especificar'}</p>
+                  <p><span className="font-semibold">Iniciado por:</span> {mantenimientoIniciadoPor || 'Administrador TI'}</p>
+                  <p><span className="font-semibold">Hora de Inicio:</span> {mantenimientoFechaInicio ? new Date(mantenimientoFechaInicio).toLocaleString() : 'Reciente'}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -378,6 +451,66 @@ const ConfiguracionGeneral: React.FC = () => {
             </table>
           </div>
         </div>
+      {modalMantenimientoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center gap-3 text-red-600 border-b border-gray-100 pb-3">
+              <AlertCircle size={24} />
+              <h3 className="text-lg font-bold">Activar Modo Mantenimiento</h3>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Esta acción bloqueará de inmediato las terminales POS en sucursales, pausará el Watchdog de Windows y despachará un correo de notificación a TI y Ejecutivos.
+            </p>
+
+            <form onSubmit={handleConfirmarActivarMantenimiento} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Motivo del Mantenimiento <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  className="input-field w-full text-sm"
+                  placeholder="Ej. Migración de base de datos, actualización de kernel EMV en terminales..."
+                  value={motivoInput}
+                  onChange={(e) => setMotivoInput(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Iniciado por
+                </label>
+                <input
+                  type="text"
+                  className="input-field w-full text-sm"
+                  value={iniciadoPorInput}
+                  onChange={(e) => setIniciadoPorInput(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setModalMantenimientoOpen(false)}
+                  disabled={procesandoMantenimiento}
+                  className="btn-secondary text-sm"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={procesandoMantenimiento}
+                  className="text-sm bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors"
+                >
+                  {procesandoMantenimiento ? 'Activando...' : 'Confirmar y Activar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
