@@ -12,7 +12,8 @@ const ConfiguracionGeneral: React.FC = () => {
   const [nuevoCorreoIT, setNuevoCorreoIT] = useState('');
   const [nuevoCorreoEje, setNuevoCorreoEje] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [mostrarEliminadosCorreos, setMostrarEliminadosCorreos] = useState(false);
+  const [mostrarEliminadosIT, setMostrarEliminadosIT] = useState(false);
+  const [mostrarEliminadosEje, setMostrarEliminadosEje] = useState(false);
 
   const agregarCorreo = (tipo: 'IT' | 'EJECUTIVO', correo: string) => {
     if (!correo.trim()) return;
@@ -108,33 +109,33 @@ const ConfiguracionGeneral: React.FC = () => {
 
         {/* Panel 2: Alertas */}
         <div className="card p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="border-b border-gray-100 pb-3">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <Bell size={20} className="text-amber-500" />
               Correos de Notificación
             </h2>
-            <div className="flex items-center gap-2">
-              <input 
-                type="checkbox" 
-                id="mostrarEliminados" 
-                className="w-4 h-4 text-primary-600 rounded"
-                checked={mostrarEliminadosCorreos}
-                onChange={(e) => setMostrarEliminadosCorreos(e.target.checked)}
-              />
-              <label htmlFor="mostrarEliminados" className="text-xs text-gray-600 cursor-pointer">
-                Mostrar eliminados
-              </label>
-            </div>
           </div>
           
           <div className="space-y-3">
-            <label className="block text-sm font-medium text-gray-700">Alertas IT / Errores</label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">Alertas IT / Errores</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="mostrarEliminadosIT" 
+                  className="w-3 h-3 text-primary-600 rounded"
+                  checked={mostrarEliminadosIT}
+                  onChange={(e) => setMostrarEliminadosIT(e.target.checked)}
+                />
+                <label htmlFor="mostrarEliminadosIT" className="text-xs text-gray-500 cursor-pointer">Mostrar eliminados</label>
+              </div>
+            </div>
             <div className="flex gap-2">
               <input type="email" className="input-field" placeholder="Nuevo correo IT..." value={nuevoCorreoIT} onChange={e => setNuevoCorreoIT(e.target.value)} onKeyDown={e => e.key === 'Enter' && agregarCorreo('IT', nuevoCorreoIT)} />
               <button type="button" onClick={() => agregarCorreo('IT', nuevoCorreoIT)} className="btn-secondary px-3"><Plus size={18} /></button>
             </div>
             <ul className="mt-2 space-y-2">
-              {correosIT.filter(c => c.activo || mostrarEliminadosCorreos).map(c => (
+              {correosIT.filter(c => c.activo || mostrarEliminadosIT).map(c => (
                 <li key={c.id} className={`flex flex-col p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100'}`}>
                   <div className="flex items-center justify-between">
                     <span className={!c.activo ? 'text-red-500 line-through opacity-70' : ''}>{c.correo}</span>
@@ -153,13 +154,25 @@ const ConfiguracionGeneral: React.FC = () => {
           </div>
 
           <div className="space-y-3 pt-3 border-t border-gray-100">
-            <label className="block text-sm font-medium text-gray-700">Alertas Ejecutivas</label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-700">Alertas Ejecutivas</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="mostrarEliminadosEje" 
+                  className="w-3 h-3 text-primary-600 rounded"
+                  checked={mostrarEliminadosEje}
+                  onChange={(e) => setMostrarEliminadosEje(e.target.checked)}
+                />
+                <label htmlFor="mostrarEliminadosEje" className="text-xs text-gray-500 cursor-pointer">Mostrar eliminados</label>
+              </div>
+            </div>
             <div className="flex gap-2">
               <input type="email" className="input-field" placeholder="Nuevo correo ejecutivo..." value={nuevoCorreoEje} onChange={e => setNuevoCorreoEje(e.target.value)} onKeyDown={e => e.key === 'Enter' && agregarCorreo('EJECUTIVO', nuevoCorreoEje)} />
               <button type="button" onClick={() => agregarCorreo('EJECUTIVO', nuevoCorreoEje)} className="btn-secondary px-3"><Plus size={18} /></button>
             </div>
             <ul className="mt-2 space-y-2">
-              {correosEje.filter(c => c.activo || mostrarEliminadosCorreos).map(c => (
+              {correosEje.filter(c => c.activo || mostrarEliminadosEje).map(c => (
                 <li key={c.id} className={`flex flex-col p-2 rounded-lg text-sm border ${c.activo ? 'bg-gray-50 border-gray-200 text-gray-800' : 'bg-red-50 border-red-100'}`}>
                   <div className="flex items-center justify-between">
                     <span className={!c.activo ? 'text-red-500 line-through opacity-70' : ''}>{c.correo}</span>
