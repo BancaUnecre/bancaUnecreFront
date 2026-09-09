@@ -7,6 +7,7 @@ export interface EmpresasListParams {
   page?: number;
   limit?: number;
   buscar?: string;
+  todas?: boolean;
 }
 
 export interface PaginatedEmpresas {

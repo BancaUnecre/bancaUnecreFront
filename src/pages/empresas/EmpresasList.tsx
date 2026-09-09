@@ -15,6 +15,7 @@ const EmpresasList: React.FC = () => {
   const [page, setPage] = useState(1);
   const [deleteItem, setDeleteItem] = useState<Empresa | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [mostrarInactivas, setMostrarInactivas] = useState(false);
 
   const limit = 20;
 
@@ -22,7 +23,7 @@ const EmpresasList: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await empresasService.getAll({ page, limit, buscar: search || undefined });
+      const res = await empresasService.getAll({ page, limit, buscar: search || undefined, todas: mostrarInactivas });
       const raw = res.data as any;
       const items: Empresa[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
       setData(items);
@@ -32,7 +33,7 @@ const EmpresasList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, mostrarInactivas]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -97,7 +98,16 @@ const EmpresasList: React.FC = () => {
             {total > 0 && <span className="ml-2 text-primary-600 font-medium">({total} registros)</span>}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input 
+              type="checkbox" 
+              className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              checked={mostrarInactivas}
+              onChange={(e) => setMostrarInactivas(e.target.checked)}
+            />
+            Mostrar eliminadas
+          </label>
           <button onClick={loadData} className="btn-secondary" disabled={loading}>
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
           </button>
