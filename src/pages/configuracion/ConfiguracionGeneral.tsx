@@ -3,6 +3,23 @@ import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2
 
 interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; eliminado_por?: string; fecha_eliminacion?: string; ip_eliminacion?: string; }
 
+interface CatalogoCronItem {
+  id: number;
+  clave: string;
+  nombre: string;
+  frecuencia: string;
+  activo: boolean;
+}
+
+interface RegistroCronItem {
+  id: number;
+  nombre_cron: string;
+  fecha_ejecucion: string;
+  estado: 'Exito' | 'Fallo';
+  detalles_resultado?: string;
+  notificado_por_correo?: boolean;
+}
+
 const ConfiguracionGeneral: React.FC = () => {
   const [correos, setCorreos] = useState<Correo[]>([
     { id: 1, correo: 'meny8083@gmail.com', tipo: 'IT', activo: true },
@@ -17,6 +34,11 @@ const ConfiguracionGeneral: React.FC = () => {
   const [mantenimientoActivo, setMantenimientoActivo] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
+  // Estados de Crons
+  const [cronsActivosMaster, setCronsActivosMaster] = useState(true);
+  const [catalogoCrons, setCatalogoCrons] = useState<CatalogoCronItem[]>([]);
+  const [historialCrons, setHistorialCrons] = useState<RegistroCronItem[]>([]);
+
   React.useEffect(() => {
     import('../../services/api').then(({ default: api }) => {
       api.get('/configuracion/status')
@@ -26,8 +48,47 @@ const ConfiguracionGeneral: React.FC = () => {
           }
         })
         .catch(err => console.error('Error cargando estado de mantenimiento:', err));
+
+      api.get('/configuracion/crons')
+        .then(res => {
+          if (res.data) {
+            setCronsActivosMaster(res.data.crons_activos);
+            setCatalogoCrons(res.data.crons || []);
+            setHistorialCrons(res.data.historial || []);
+          }
+        })
+        .catch(err => console.error('Error cargando crons:', err));
     });
   }, []);
+
+  const handleToggleMasterCrons = async () => {
+    const nuevo = !cronsActivosMaster;
+    setCronsActivosMaster(nuevo);
+    try {
+      const { default: api } = await import('../../services/api');
+      await api.put('/configuracion/crons/master', { activo: nuevo });
+    } catch (err) {
+      console.error('Error al actualizar master crons:', err);
+    }
+  };
+
+  const handleToggleIndividualCron = async (id: number, activoActual: boolean) => {
+    const nuevo = !activoActual;
+    setCatalogoCrons(catalogoCrons.map(c => c.id === id ? { ...c, activo: nuevo } : c));
+    try {
+      const { default: api } = await import('../../services/api');
+      await api.put(`/configuracion/crons/${id}`, { activo: nuevo });
+    } catch (err) {
+      console.error('Error al actualizar cron:', err);
+    }
+  };
+
+  const formatFrecuencia = (frec: string) => {
+    if (frec === '0 * * * *') return 'Cada hora en punto';
+    if (frec === '0 1 * * *') return 'Todos los días a la 01:00 AM';
+    if (frec === '*/15 * * * *') return 'Cada 15 minutos';
+    return frec;
+  };
 
   const handleToggleMantenimiento = async (activo: boolean) => {
     setMantenimientoActivo(activo);
@@ -248,31 +309,38 @@ const ConfiguracionGeneral: React.FC = () => {
             </h2>
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium text-gray-700">Interruptor Maestro:</span>
-              <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-emerald-500 transition-colors">
-                <span className="inline-block h-4 w-4 translate-x-6 transform rounded-full bg-white transition-transform"></span>
+              <button 
+                onClick={handleToggleMasterCrons}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${cronsActivosMaster ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                title={cronsActivosMaster ? 'Desactivar todos los crons' : 'Activar todos los crons'}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${cronsActivosMaster ? 'translate-x-6' : 'translate-x-1'}`}></span>
               </button>
             </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">Limpieza Vales Caducados</p>
-                <p className="text-xs text-gray-500">Ejecución: Cada hora en punto</p>
+            {catalogoCrons.length === 0 ? (
+              <div className="col-span-2 p-4 text-center text-sm text-gray-400 bg-gray-50 rounded-lg">
+                Cargando tareas programadas...
               </div>
-              <button className="relative inline-flex h-5 w-9 items-center rounded-full bg-emerald-500 transition-colors">
-                <span className="inline-block h-3 w-3 translate-x-5 transform rounded-full bg-white transition-transform"></span>
-              </button>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">Proceso Nocturno (Cobranza)</p>
-                <p className="text-xs text-gray-500">Ejecución: Todos los días a la 01:00 AM</p>
-              </div>
-              <button className="relative inline-flex h-5 w-9 items-center rounded-full bg-emerald-500 transition-colors">
-                <span className="inline-block h-3 w-3 translate-x-5 transform rounded-full bg-white transition-transform"></span>
-              </button>
-            </div>
+            ) : (
+              catalogoCrons.map(c => (
+                <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div>
+                    <p className="font-semibold text-gray-800 text-sm">{c.nombre}</p>
+                    <p className="text-xs text-gray-500">Ejecución: {formatFrecuencia(c.frecuencia)} ({c.clave})</p>
+                  </div>
+                  <button 
+                    onClick={() => handleToggleIndividualCron(c.id, c.activo)}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${c.activo ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                    title={c.activo ? 'Desactivar cron' : 'Activar cron'}
+                  >
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${c.activo ? 'translate-x-5' : 'translate-x-1'}`}></span>
+                  </button>
+                </div>
+              ))
+            )}
           </div>
           
           <div className="overflow-x-auto mt-4">
@@ -286,31 +354,26 @@ const ConfiguracionGeneral: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {/* Registros de ejemplo (Placeholder hasta conectar API) */}
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">Limpieza Vales Caducados</td>
-                  <td className="px-4 py-3">Hoy, 11:00 AM</td>
-                  <td className="px-4 py-3"><span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">Éxito</span></td>
-                  <td className="px-4 py-3">Se cancelaron 12 vales caducados y se devolvieron los fondos. Tiempo: 0.35s</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">Limpieza Vales Caducados</td>
-                  <td className="px-4 py-3">Hoy, 10:00 AM</td>
-                  <td className="px-4 py-3"><span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">Éxito</span></td>
-                  <td className="px-4 py-3">No hubo vales pendientes. Tiempo: 0.12s</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">Proceso Nocturno</td>
-                  <td className="px-4 py-3">Ayer, 01:00 AM</td>
-                  <td className="px-4 py-3"><span className="text-emerald-600 font-semibold bg-emerald-50 px-2 py-1 rounded">Éxito</span></td>
-                  <td className="px-4 py-3">Cortes mensuales ejecutados. Reporte CSV generado con 45 deudores. Tiempo total: 2.40s</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">Proceso Nocturno</td>
-                  <td className="px-4 py-3">Hace 2 días, 01:00 AM</td>
-                  <td className="px-4 py-3"><span className="text-red-600 font-semibold bg-red-50 px-2 py-1 rounded">Fallo</span></td>
-                  <td className="px-4 py-3">Error en proceso nocturno: ECONNREFUSED 127.0.0.1:1433</td>
-                </tr>
+                {historialCrons.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-gray-400 text-xs">
+                      No hay registros de auditoría de crons recientes en la base de datos.
+                    </td>
+                  </tr>
+                ) : (
+                  historialCrons.map(h => (
+                    <tr key={h.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium text-gray-900">{h.nombre_cron}</td>
+                      <td className="px-4 py-3">{new Date(h.fecha_ejecucion).toLocaleString()}</td>
+                      <td className="px-4 py-3">
+                        <span className={`font-semibold px-2 py-1 rounded text-xs ${h.estado === 'Exito' ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50'}`}>
+                          {h.estado === 'Exito' ? 'Éxito' : 'Fallo'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs">{h.detalles_resultado || '-'}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
