@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Loader2, AlertCircle, RefreshCw, CreditCard, PiggyBank, FileText, BarChart3, ListOrdered, SmartphoneNfc } from 'lucide-react';
 import DataTable, { type Column } from '../../components/common/DataTable';
 import type { Cuenta } from '../../types';
@@ -119,10 +119,10 @@ const CuentasList: React.FC = () => {
     },
     {
       key: 'limite_credito',
-      header: 'LÃ­mite CrÃ©dito',
+      header: 'Límite Crédito',
       render: r => r.limite_credito > 0
         ? <span className="text-blue-700 font-semibold">{fmtMoney(r.limite_credito, r.moneda)}</span>
-        : <span className="text-gray-400">â€”</span>,
+        : <span className="text-gray-400">—</span>,
     },
     { key: 'dia_corte', header: 'Día de Corte', render: r => <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md font-medium text-xs">{r.dia_corte === 31 ? 'Último del mes' : 'Día ' + (r.dia_corte ?? 1)}</span> },
       { key: 'estatus', header: 'Estatus', render: r => <EstatusBadge estatus={r.estatus} /> },
@@ -189,7 +189,7 @@ const CuentasList: React.FC = () => {
           <DataTable
             data={filtered}
             columns={columns}
-            searchPlaceholder="Buscar por nÃºmero, CLABE o tipo..."
+            searchPlaceholder="Buscar por número, CLABE o tipo..."
             onSearch={setSearch}
             searchValue={search}
             pageSize={limit}
@@ -197,7 +197,7 @@ const CuentasList: React.FC = () => {
         )}
         {!loading && total > limit && (
           <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
-            <span className="text-sm text-gray-500">PÃ¡gina {page} Â· {Math.ceil(total / limit)} pÃ¡ginas Â· {total} cuentas</span>
+            <span className="text-sm text-gray-500">Página {page} de {Math.ceil(total / limit)} páginas — {total} cuentas</span>
             <div className="flex gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn-secondary py-1 px-3 text-sm disabled:opacity-40">Anterior</button>
               <button onClick={() => setPage(p => p + 1)} disabled={page * limit >= total} className="btn-secondary py-1 px-3 text-sm disabled:opacity-40">Siguiente</button>

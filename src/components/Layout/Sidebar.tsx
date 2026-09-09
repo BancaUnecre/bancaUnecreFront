@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -30,7 +30,7 @@ const operacionesItems = [
   { to: '/operaciones/deposito', label: 'Depositar a cuenta', icon: ArrowDownCircle },
   { to: '/operaciones/retiro', label: 'Retirar de cuenta', icon: ArrowUpCircle },
   { to: '/operaciones/cobranza', label: 'Cobranza y Cortes', icon: FileBarChart2 },
-    { to: '/operaciones/abonos-credito', label: 'Abonos a Créditos', icon: CreditCard },
+  { to: '/operaciones/abonos-credito', label: 'Abonos a Créditos', icon: CreditCard },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
@@ -95,11 +95,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             <ListOrdered size={18} />Consulta de Cuentas
           </NavLink>
 
-          {/* Separator */}
-          <div className="pt-3 pb-1">
-            <p className="text-primary-500 text-xs font-semibold uppercase tracking-widest px-3">Operaciones</p>
-          </div>
-
           {/* Operaciones submenu */}
           <div>
             <button
@@ -107,7 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-100 hover:bg-primary-700/60 hover:text-white transition-all"
             >
               <Activity size={18} />
-              <span className="flex-1 text-left">Catálogos</span>
+              <span className="flex-1 text-left">Operaciones</span>
               {operacionesOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </button>
             {operacionesOpen && (
@@ -124,50 +119,48 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
           {isAdmin && (
             <>
               {/* Separator */}
-                        <div className="pt-3 pb-1">
-                          <p className="text-primary-500 text-xs font-semibold uppercase tracking-widest px-3">ConfiguraciÃ³n</p>
-                        </div>
+              <div className="pt-3 pb-1">
+                <p className="text-primary-500 text-xs font-semibold uppercase tracking-widest px-3">Configuración</p>
+              </div>
               
-                        {/* Catalogos submenu */}
-                        <div>
-                          <button
-                            onClick={() => setCatalogsOpen(o => !o)}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-100 hover:bg-primary-700/60 hover:text-white transition-all"
-                          >
-                            <BookOpen size={18} />
-                            <span className="flex-1 text-left">Catálogos</span>
-                            {catalogsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                          </button>
-                          {catalogsOpen && (
-                            <div className="ml-4 mt-0.5 space-y-0.5 border-l border-primary-700 pl-3">
-                              {catalogosItems.map(item => (
-                                <NavLink key={item.to} to={item.to} className={submenuClass} onClick={onClose}>
-                                  <item.icon size={15} />{item.label}
-                                </NavLink>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+              {/* Catalogos submenu */}
+              <div>
+                <button
+                  onClick={() => setCatalogsOpen(o => !o)}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-100 hover:bg-primary-700/60 hover:text-white transition-all"
+                >
+                  <BookOpen size={18} />
+                  <span className="flex-1 text-left">Catálogos</span>
+                  {catalogsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+                {catalogsOpen && (
+                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-primary-700 pl-3">
+                    {catalogosItems.map(item => (
+                      <NavLink key={item.to} to={item.to} className={submenuClass} onClick={onClose}>
+                        <item.icon size={15} />{item.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
               
-                        <NavLink to="/sucursales" className={navLinkClass} onClick={onClose}>
-                          <Building2 size={18} />Sucursales
-                        </NavLink>
+              <NavLink to="/sucursales" className={navLinkClass} onClick={onClose}>
+                <Building2 size={18} />Sucursales
+              </NavLink>
               
-                        <NavLink to="/terminales" className={navLinkClass} onClick={onClose}>
-                          <MonitorSmartphone size={18} />Terminales
-                        </NavLink>
+              <NavLink to="/terminales" className={navLinkClass} onClick={onClose}>
+                <MonitorSmartphone size={18} />Terminales
+              </NavLink>
               
-                        <NavLink to="/usuarios" className={navLinkClass} onClick={onClose}>
-                          <UserCog size={18} />Usuarios del Sistema
-                        </NavLink>
-              
-                      
+              <NavLink to="/usuarios" className={navLinkClass} onClick={onClose}>
+                <UserCog size={18} />Usuarios del Sistema
+              </NavLink>
             </>
           )}
         </div>
 
-          <div className="p-3 border-t border-primary-800">
-          <p className="text-xs text-primary-400 text-center">Banco Unecre Â© 2026</p>
+        <div className="p-3 border-t border-primary-800">
+          <p className="text-xs text-primary-400 text-center">Banco Unecre © 2026</p>
           <p className="text-xs text-primary-500 text-center">v1.0.0</p>
         </div>
       </aside>
@@ -176,7 +169,3 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
 };
 
 export default Sidebar;
-
-
-
-
