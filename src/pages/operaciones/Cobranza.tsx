@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Search, DollarSign, Calendar, CreditCard, CheckCircle, AlertCircle, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import api from '../../services/api';
 import { exportService } from '../../services/exportService';
+import { CobroErrorModal, type CobroErrorData } from '../../components/common/CobroErrorModal';
 
 const Cobranza: React.FC = () => {
   const [cuentaId, setCuentaId] = useState('');
   const [cortes, setCortes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorModalData, setErrorModalData] = useState<CobroErrorData | null>(null);
   
   const [montoPagar, setMontoPagar] = useState<number | ''>('');
   const [formaPago, setFormaPago] = useState<'efectivo' | 'saldo'>('efectivo');
@@ -86,7 +88,20 @@ const Cobranza: React.FC = () => {
       setMontoPagar('');
       buscarCortes();
     } catch (e: any) {
-      alert(e.response?.data?.error || e.message || "Error al procesar el pago");
+      const errRes = e.response?.data;
+      const mensaje = errRes?.error || errRes?.message || e.message || "Error al procesar el pago";
+      const isFondos = mensaje.toLowerCase().includes('insuficiente') || mensaje.toLowerCase().includes('saldo');
+      setErrorModalData({
+        codigo: errRes?.codigo || (isFondos ? 'FONDOS_INSUFICIENTES' : 'ERROR_PAGO'),
+        mensaje: mensaje,
+        motivoDetallado: errRes?.detalles || errRes?.error || mensaje,
+        montoSolicitado: Number(montoPagar),
+        cuentaId: selectedCorte.cuenta_id || cuentaId,
+        origen: 'cobranza',
+        accionSugerida: formaPago === 'saldo'
+          ? 'El saldo disponible en la cuenta no cubre el pago de este corte. Sugiera al cliente depositar en ventanilla o cambiar la forma de pago a Efectivo en Caja.'
+          : 'Compruebe que el corte no haya sido liquidado previamente o intente nuevamente.'
+      });
     } finally {
       setLoading(false);
     }
@@ -237,6 +252,13 @@ const Cobranza: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Modal UX de error especializado en cobros */}
+      <CobroErrorModal 
+        isOpen={!!errorModalData}
+        errorData={errorModalData}
+        onClose={() => setErrorModalData(null)}
+      />
     </div>
   );
 };

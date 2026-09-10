@@ -140,6 +140,64 @@ const TerminalesList: React.FC = () => {
       render: r => <span className="text-sm text-gray-700">{r.sucursal?.nombre || '—'}</span>
     },
     {
+      key: 'estado_conexion',
+      header: 'Conexión / Red',
+      render: r => {
+        const estado = (r as any).estado_conexion || (r.conexion_activa ? 'conectada' : 'desconectada');
+        const motivo = (r as any).motivo_desconexion;
+
+        if (estado === 'conectada') {
+          return (
+            <div className="flex items-center gap-1.5" title="En línea y transmitiendo">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-xs font-bold text-emerald-700">En Línea</span>
+            </div>
+          );
+        }
+
+        if (estado === 'mantenimiento') {
+          return (
+            <div className="flex items-center gap-1.5" title={motivo || 'Sistema en mantenimiento'}>
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              <span className="text-xs font-bold text-amber-700">Mantenimiento</span>
+            </div>
+          );
+        }
+
+        if (estado === 'nunca_conectada') {
+          return (
+            <div className="flex flex-col" title={motivo}>
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500">
+                <span className="w-2 h-2 rounded-full bg-gray-400" /> Sin enlace
+              </span>
+              <span className="text-[10px] text-gray-400">Nunca conectada</span>
+            </div>
+          );
+        }
+
+        if (estado === 'inactiva') {
+          return (
+            <span className="text-xs text-gray-400 font-medium">Deshabilitada</span>
+          );
+        }
+
+        // Desconectada
+        return (
+          <div className="flex flex-col max-w-xs" title={motivo}>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+              <span className="text-xs font-bold text-red-600">Desconectada</span>
+            </div>
+            {motivo && (
+              <span className="text-[11px] text-red-500/90 truncate max-w-[220px]" title={motivo}>
+                {motivo}
+              </span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
       key: 'habilitada',
       header: 'Estatus',
       render: r => r.habilitada

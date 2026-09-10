@@ -3,6 +3,7 @@ import { Outlet, Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
+import TerminalAlertBanner from '../Terminales/TerminalAlertBanner';
 import api from '../../services/api';
 
 const Layout: React.FC = () => {
@@ -50,6 +51,10 @@ const Layout: React.FC = () => {
           </Link>
         </div>
       )}
+
+      <div className="lg:ml-64">
+        <TerminalAlertBanner />
+      </div>
 
       <main className="lg:ml-64 pt-4 px-4 pb-8 min-h-[calc(100vh-4rem)]">
         <Outlet />

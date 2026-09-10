@@ -1,8 +1,9 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Search, CreditCard, DollarSign } from 'lucide-react';
 import api from '../../services/api';
 import { BuscarCuentaModal } from '../../components/Cuentas/BuscarCuentaModal';
 import type { CuentaBuscada } from '../../types/cuenta.types';
+import { CobroErrorModal, type CobroErrorData } from '../../components/common/CobroErrorModal';
 
 const AbonosCredito: React.FC = () => {
   const [cuenta, setCuenta] = useState<CuentaBuscada | null>(null);
@@ -10,6 +11,7 @@ const AbonosCredito: React.FC = () => {
   const [creditos, setCreditos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorModalData, setErrorModalData] = useState<CobroErrorData | null>(null);
   
   const [selectedCredito, setSelectedCredito] = useState<any>(null);
   const [montoAbono, setMontoAbono] = useState<number | ''>('');
@@ -53,7 +55,20 @@ const AbonosCredito: React.FC = () => {
       setMontoAbono('');
       buscarCreditos(cuenta.cuenta_id);
     } catch (e: any) {
-      alert(e.response?.data?.error || e.message || "Error al procesar el abono");
+      const errRes = e.response?.data;
+      const mensaje = errRes?.error || errRes?.message || e.message || "Error al procesar el abono";
+      const isFondos = mensaje.toLowerCase().includes('insuficiente') || mensaje.toLowerCase().includes('saldo');
+      setErrorModalData({
+        codigo: errRes?.codigo || (isFondos ? 'FONDOS_INSUFICIENTES' : 'ERROR_ABONO'),
+        mensaje: mensaje,
+        motivoDetallado: errRes?.detalles || errRes?.error || mensaje,
+        montoSolicitado: Number(montoAbono),
+        cuentaId: cuenta?.cuenta_id,
+        origen: 'abono',
+        accionSugerida: formaPago === 'saldo'
+          ? 'La cuenta bancaria no tiene saldo suficiente para aplicar este abono. Sugiera liquidar en Efectivo en Caja o realizar un depósito en ventanilla.'
+          : 'Verifique que la compra a crédito siga activa o que el importe no supere el saldo pendiente.'
+      });
     } finally {
       setLoading(false);
     }
@@ -160,6 +175,13 @@ const AbonosCredito: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSelect={handleSelectCuenta}
+      />
+
+      {/* Modal UX de error especializado en cobros y abonos */}
+      <CobroErrorModal 
+        isOpen={!!errorModalData}
+        errorData={errorModalData}
+        onClose={() => setErrorModalData(null)}
       />
     </div>
   );

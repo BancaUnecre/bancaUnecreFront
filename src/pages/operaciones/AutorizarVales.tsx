@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Clock, CheckCircle2, Search } from 'lucide-react';
 import api from '../../services/api';
+import { CobroErrorModal, type CobroErrorData } from '../../components/common/CobroErrorModal';
 
 const AutorizarVales: React.FC = () => {
   const [vales, setVales] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [cuentaId, setCuentaId] = useState('1'); // Por defecto para Manuel
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [errorModalData, setErrorModalData] = useState<CobroErrorData | null>(null);
 
   const fetchPendientes = async () => {
     if (!cuentaId) return;
@@ -40,7 +42,21 @@ const AutorizarVales: React.FC = () => {
         alert('Cobro autorizado exitosamente');
       }
     } catch (error: any) {
-      alert('Error al autorizar: ' + (error?.response?.data?.message || error.message));
+      const errRes = error?.response?.data;
+      const mensaje = errRes?.message || errRes?.error || error.message || 'Error al autorizar el vale';
+      const isFondos = mensaje.toLowerCase().includes('insuficiente') || mensaje.toLowerCase().includes('saldo');
+      const val = vales.find(v => v.id === transaccionId);
+      setErrorModalData({
+        codigo: errRes?.codigo || (isFondos ? 'FONDOS_INSUFICIENTES' : 'ERROR_AUTORIZACION_VALE'),
+        mensaje: mensaje,
+        motivoDetallado: errRes?.detalles || errRes?.error || mensaje,
+        montoSolicitado: val?.monto,
+        cuentaId: cuentaId,
+        origen: 'vale',
+        accionSugerida: isFondos 
+          ? 'El cliente no dispone de suficiente crédito o saldo disponible para autorizar este vale.'
+          : 'El vale no pudo ser procesado. Verifique que no haya expirado o haya sido cancelado en la terminal POS.'
+      });
     } finally {
       setActionLoading(null);
     }
@@ -125,6 +141,13 @@ const AutorizarVales: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Modal UX de error especializado en autorización de vales */}
+      <CobroErrorModal 
+        isOpen={!!errorModalData}
+        errorData={errorModalData}
+        onClose={() => setErrorModalData(null)}
+      />
     </div>
   );
 };
