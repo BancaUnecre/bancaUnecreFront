@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Printer, TrendingUp, TrendingDown, CreditCard, BarChart3, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Printer, TrendingUp, TrendingDown, CreditCard, BarChart3, Loader2, AlertCircle, FileText, FileSpreadsheet } from 'lucide-react';
 import type { Cliente, Cuenta } from '../../types';
 import { clientesService } from '../../services/clientesService';
 import { cuentasService } from '../../services/cuentasService';
 import { movimientosService } from '../../services/movimientosService';
+import { exportService } from '../../services/exportService';
 
 interface Movimiento {
   id: number;
@@ -48,6 +49,40 @@ const EstadoCuenta: React.FC = () => {
   const [loadingCuentas, setLoadingCuentas] = useState(false);
   const [loadingMovimientos, setLoadingMovimientos] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!cuenta) return;
+    setExportingPdf(true);
+    try {
+      await exportService.descargarEstadoCuentaPdf(cuenta.id, {
+        desde: fechaDesde,
+        hasta: fechaHasta,
+        tipo: tipoFilter || undefined,
+      });
+    } catch (err: any) {
+      alert('Error al exportar PDF: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!cuenta) return;
+    setExportingExcel(true);
+    try {
+      await exportService.descargarEstadoCuentaExcel(cuenta.id, {
+        desde: fechaDesde,
+        hasta: fechaHasta,
+        tipo: tipoFilter || undefined,
+      });
+    } catch (err: any) {
+      alert('Error al exportar Excel: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -129,7 +164,26 @@ const EstadoCuenta: React.FC = () => {
           <p className="text-gray-500 text-sm mt-0.5">Consulta de movimientos y saldos por cuenta</p>
         </div>
         {cuenta && (
-          <button className="btn-secondary"><Printer size={16} />Imprimir / PDF</button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="btn-secondary flex items-center gap-2 text-sm text-red-700 bg-red-50 hover:bg-red-100 border-red-200 transition-colors shadow-sm"
+              title="Descargar Estado de Cuenta en PDF"
+            >
+              {exportingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+              Exportar PDF
+            </button>
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+              className="btn-secondary flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border-emerald-200 transition-colors shadow-sm"
+              title="Descargar Estado de Cuenta en Excel (.xlsx)"
+            >
+              {exportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+              Exportar Excel (.xlsx)
+            </button>
+          </div>
         )}
       </div>
 

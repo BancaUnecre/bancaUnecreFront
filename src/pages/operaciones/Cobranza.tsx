@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Search, DollarSign, Calendar, CreditCard, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, DollarSign, Calendar, CreditCard, CheckCircle, AlertCircle, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import api from '../../services/api';
+import { exportService } from '../../services/exportService';
 
 const Cobranza: React.FC = () => {
   const [cuentaId, setCuentaId] = useState('');
@@ -11,6 +12,37 @@ const Cobranza: React.FC = () => {
   const [montoPagar, setMontoPagar] = useState<number | ''>('');
   const [formaPago, setFormaPago] = useState<'efectivo' | 'saldo'>('efectivo');
   const [selectedCorte, setSelectedCorte] = useState<any>(null);
+
+  const [downloadingCorteId, setDownloadingCorteId] = useState<number | null>(null);
+  const [downloadingFormat, setDownloadingFormat] = useState<'pdf' | 'excel' | null>(null);
+
+  const handleDescargarCortePdf = async (corteId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDownloadingCorteId(corteId);
+    setDownloadingFormat('pdf');
+    try {
+      await exportService.descargarCortePdf(corteId);
+    } catch (err: any) {
+      alert('Error al descargar PDF del corte: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setDownloadingCorteId(null);
+      setDownloadingFormat(null);
+    }
+  };
+
+  const handleDescargarCorteExcel = async (corteId: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setDownloadingCorteId(corteId);
+    setDownloadingFormat('excel');
+    try {
+      await exportService.descargarCorteExcel(corteId);
+    } catch (err: any) {
+      alert('Error al descargar Excel del corte: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setDownloadingCorteId(null);
+      setDownloadingFormat(null);
+    }
+  };
 
   const buscarCortes = async () => {
     if (!cuentaId) return;
@@ -105,15 +137,67 @@ const Cobranza: React.FC = () => {
                   <div>Abonado: <span className="text-green-600 font-semibold">${Number(c.abonos_mes).toLocaleString('es-MX')}</span></div>
                   <div>Vence: {new Date(c.fecha_limite_pago).toLocaleDateString()}</div>
                 </div>
+
+                <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                  <span className="text-xs text-gray-400">Descargar Estado de Corte:</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => handleDescargarCortePdf(c.id, e)}
+                      disabled={downloadingCorteId === c.id}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors shadow-sm disabled:opacity-50"
+                      title="Descargar Corte en PDF"
+                    >
+                      {downloadingCorteId === c.id && downloadingFormat === 'pdf' ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <FileText size={12} />
+                      )}
+                      PDF
+                    </button>
+                    <button
+                      onClick={(e) => handleDescargarCorteExcel(c.id, e)}
+                      disabled={downloadingCorteId === c.id}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors shadow-sm disabled:opacity-50"
+                      title="Descargar Corte en Excel (.xlsx)"
+                    >
+                      {downloadingCorteId === c.id && downloadingFormat === 'excel' ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <FileSpreadsheet size={12} />
+                      )}
+                      Excel
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
 
           {selectedCorte && (
             <div className="card p-6 bg-primary-50/30">
-              <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <DollarSign size={20} className="text-primary-600" /> Registrar Pago
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-bold text-lg flex items-center gap-2">
+                  <DollarSign size={20} className="text-primary-600" /> Registrar Pago
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDescargarCortePdf(selectedCorte.id)}
+                    disabled={downloadingCorteId === selectedCorte.id}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-red-700 bg-white hover:bg-red-50 border border-red-200 shadow-sm"
+                    title="Descargar PDF"
+                  >
+                    {downloadingCorteId === selectedCorte.id && downloadingFormat === 'pdf' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />} PDF
+                  </button>
+                  <button
+                    onClick={() => handleDescargarCorteExcel(selectedCorte.id)}
+                    disabled={downloadingCorteId === selectedCorte.id}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold text-emerald-700 bg-white hover:bg-emerald-50 border border-emerald-200 shadow-sm"
+                    title="Descargar Excel"
+                  >
+                    {downloadingCorteId === selectedCorte.id && downloadingFormat === 'excel' ? <Loader2 size={12} className="animate-spin" /> : <FileSpreadsheet size={12} />} Excel
+                  </button>
+                </div>
+              </div>
               <div className="bg-white p-4 rounded-xl border border-gray-100 mb-6 space-y-2 text-sm">
                 <div className="flex justify-between"><span>Deuda Total Restante:</span> <span className="font-bold">${(Number(selectedCorte.saldo_actual) - Number(selectedCorte.abonos_mes)).toLocaleString('es-MX')}</span></div>
                 <div className="flex justify-between text-gray-500"><span>Pago Mínimo Sugerido:</span> <span>${Number(selectedCorte.pago_minimo).toLocaleString('es-MX')}</span></div>

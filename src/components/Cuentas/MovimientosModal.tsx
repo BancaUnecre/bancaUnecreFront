@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
-import { X, Loader2, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Loader2, AlertCircle, TrendingUp, TrendingDown, FileText, FileSpreadsheet } from 'lucide-react';
 import api from '../../services/api';
+import { exportService } from '../../services/exportService';
 
 interface MovimientosModalProps {
   cuentaId: number;
@@ -40,6 +41,30 @@ const MovimientosModal: React.FC<MovimientosModalProps> = ({ cuentaId, onClose }
   const [data, setData]       = useState<Movimiento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      await exportService.descargarEstadoCuentaPdf(cuentaId);
+    } catch (err: any) {
+      alert('Error al exportar PDF: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      await exportService.descargarEstadoCuentaExcel(cuentaId);
+    } catch (err: any) {
+      alert('Error al exportar Excel: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   useEffect(() => {
     const fetch = async () => {
@@ -78,12 +103,32 @@ const MovimientosModal: React.FC<MovimientosModalProps> = ({ cuentaId, onClose }
             <h2 className="text-xl font-bold text-gray-800">Historial de Movimientos</h2>
             <p className="text-sm text-gray-500 mt-1">Cuenta #{cuentaId}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportPdf}
+              disabled={exportingPdf || loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold transition-colors disabled:opacity-50"
+              title="Descargar Estado de Cuenta en PDF"
+            >
+              {exportingPdf ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+              PDF
+            </button>
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel || loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold transition-colors disabled:opacity-50"
+              title="Descargar Estado de Cuenta en Excel (.xlsx)"
+            >
+              {exportingExcel ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+              Excel
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition-colors ml-2"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Resumen */}
