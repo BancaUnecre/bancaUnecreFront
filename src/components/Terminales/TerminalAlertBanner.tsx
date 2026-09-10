@@ -64,7 +64,7 @@ export const TerminalAlertBanner: React.FC = () => {
 
         <div className="flex items-center gap-3 shrink-0 ml-auto">
           <Link
-            to="/catalogos/terminales"
+            to="/terminales"
             className="flex items-center gap-1 text-xs font-bold bg-amber-600/80 hover:bg-amber-600 px-3 py-1 rounded-lg transition-colors border border-amber-400/40"
           >
             Diagnosticar Terminales <ChevronRight size={13} />

@@ -63,6 +63,7 @@ const AppRouter: React.FC = () => {
           <Route path="cuentas/apertura" element={<AperturaCuenta />} />
           <Route path="sucursales" element={<SucursalesList />} />
           <Route path="terminales" element={<TerminalesList />} />
+          <Route path="catalogos/terminales" element={<Navigate to="/terminales" replace />} />
           <Route path="usuarios" element={<UsuariosList />} />
           <Route path="operaciones/transferencias" element={<Transferencias />} />
           <Route path="operaciones/estado-cuenta" element={<EstadoCuenta />} />
