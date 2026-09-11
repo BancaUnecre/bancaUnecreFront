@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff, Folder, Play, CheckCircle, FolderSearch, ChevronRight, CornerLeftUp, FolderPlus, HardDrive, X } from 'lucide-react';
+import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff, Folder, Play, CheckCircle, FolderSearch, ChevronRight, CornerLeftUp, FolderPlus, HardDrive, X, CreditCard } from 'lucide-react';
 
 interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; eliminado_por?: string; fecha_eliminacion?: string; ip_eliminacion?: string; }
 
@@ -56,6 +56,11 @@ const ConfiguracionGeneral: React.FC = () => {
   const [mensajeRuta, setMensajeRuta] = useState('');
   const [ejecutandoCronManual, setEjecutandoCronManual] = useState(false);
 
+  // Estados de Switch Bancario / Tarjetas Externas
+  const [aceptarTarjetasExternas, setAceptarTarjetasExternas] = useState(false);
+  const [procesandoTarjetasExternas, setProcesandoTarjetasExternas] = useState(false);
+  const [mensajeTarjetasExternas, setMensajeTarjetasExternas] = useState('');
+
   // Estados del Explorador de Directorios del Servidor
   const [modalExploradorOpen, setModalExploradorOpen] = useState(false);
   const [exploradorRutaActual, setExploradorRutaActual] = useState('');
@@ -77,6 +82,7 @@ const ConfiguracionGeneral: React.FC = () => {
             setMantenimientoMotivo(res.data.mantenimiento_motivo || '');
             setMantenimientoIniciadoPor(res.data.mantenimiento_iniciado_por || '');
             setMantenimientoFechaInicio(res.data.mantenimiento_fecha_inicio || '');
+            setAceptarTarjetasExternas(!!res.data.aceptar_tarjetas_externas);
           }
         })
         .catch(err => console.error('Error cargando estado de mantenimiento:', err));
@@ -316,8 +322,24 @@ const ConfiguracionGeneral: React.FC = () => {
     setCorreos(correos.map(c => c.id === id ? { ...c, activo: !c.activo } : c));
   };
 
-  const correosIT = correos.filter(c => c.tipo === 'IT');
-  const correosEje = correos.filter(c => c.tipo === 'EJECUTIVO');
+  const handleToggleTarjetasExternas = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nuevoValor = e.target.checked;
+    setProcesandoTarjetasExternas(true);
+    setMensajeTarjetasExternas('');
+    try {
+      const { default: api } = await import('../../services/api');
+      const res = await api.put('/configuracion/tarjetas-externas', { activo: nuevoValor });
+      if (res.data && res.data.success) {
+        setAceptarTarjetasExternas(res.data.aceptar_tarjetas_externas);
+        setMensajeTarjetasExternas(res.data.message);
+        setTimeout(() => setMensajeTarjetasExternas(''), 5000);
+      }
+    } catch (err: any) {
+      alert('Error actualizando switch de tarjetas externas: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setProcesandoTarjetasExternas(false);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -384,6 +406,39 @@ const ConfiguracionGeneral: React.FC = () => {
                   <p><span className="font-semibold">Motivo:</span> {mantenimientoMotivo || 'Sin especificar'}</p>
                   <p><span className="font-semibold">Iniciado por:</span> {mantenimientoIniciadoPor || 'Administrador TI'}</p>
                   <p><span className="font-semibold">Hora de Inicio:</span> {mantenimientoFechaInicio ? new Date(mantenimientoFechaInicio).toLocaleString() : 'Reciente'}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Control de Switch Bancario / Tarjetas Externas */}
+            <div className="mt-5 pt-4 border-t border-gray-100">
+              <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                <CreditCard size={18} className="text-emerald-600" />
+                Switch Bancario — Tarjetas Externas (Visa / Mastercard)
+              </label>
+              <div className="mt-2 flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  className="w-4 h-4 text-emerald-600 rounded cursor-pointer" 
+                  checked={aceptarTarjetasExternas}
+                  onChange={handleToggleTarjetasExternas}
+                  disabled={procesandoTarjetasExternas}
+                />
+                <span className={`text-sm font-semibold ${aceptarTarjetasExternas ? 'text-emerald-600' : 'text-gray-600'}`}>
+                  {aceptarTarjetasExternas 
+                    ? 'SWITCH ACTIVO: Aceptando tarjetas de cualquier banco (Circuito Abierto)' 
+                    : 'EXCLUSIVO UNECRE: Tarjetas externas bloqueadas (Circuito Cerrado)'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                {aceptarTarjetasExternas 
+                  ? 'Las terminales Orobo y Sunmi procesarán cobros con tarjetas bancarias externas enviando autorización al Switch Adquirente.' 
+                  : 'Las terminales Orobo y Sunmi solo aceptarán tarjetas emitidas por Banca Unecre (BIN 415231). Cualquier plástico foráneo será declinado automáticamente.'}
+              </p>
+
+              {mensajeTarjetasExternas && (
+                <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-700">
+                  {mensajeTarjetasExternas}
                 </div>
               )}
             </div>
