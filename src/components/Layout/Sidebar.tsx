@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { isAdmin, isGerenteOrAdmin } from '../../utils/rbac';
 import {
   LayoutDashboard, Users, BookOpen, ChevronDown, ChevronRight,
   MapPin, CreditCard, Shield, Briefcase, IdCard, Building2,
@@ -21,16 +22,15 @@ const catalogosItems = [
   { to: '/catalogos/tipo-identificacion',label: 'Tipo Identificación', icon: IdCard },
 ];
 
-const operacionesItems = [
+const baseOperacionesItems = [
   { to: '/operaciones/transferencias', label: 'Transferencias',         icon: ArrowLeftRight },
   { to: '/operaciones/estado-cuenta',  label: 'Estado de Cuenta',       icon: FileBarChart2 },
   { to: '/operaciones/spei',           label: 'Transf. Otros Bancos',   icon: Globe },
   { to: '/operaciones/vales',          label: 'Generador de Vales',     icon: QrCode },
-  { to: '/operaciones/vales/autorizar', label: 'Autorizar Vales',       icon: ShieldCheck },
-  { to: '/operaciones/deposito', label: 'Depositar a cuenta', icon: ArrowDownCircle },
-  { to: '/operaciones/retiro', label: 'Retirar de cuenta', icon: ArrowUpCircle },
-  { to: '/operaciones/cobranza', label: 'Cobranza y Cortes', icon: FileBarChart2 },
-  { to: '/operaciones/abonos-credito', label: 'Abonos a Créditos', icon: CreditCard },
+  { to: '/operaciones/deposito',       label: 'Depositar a cuenta',     icon: ArrowDownCircle },
+  { to: '/operaciones/retiro',         label: 'Retirar de cuenta',       icon: ArrowUpCircle },
+  { to: '/operaciones/cobranza',       label: 'Cobranza y Cortes',      icon: FileBarChart2 },
+  { to: '/operaciones/abonos-credito', label: 'Abonos a Créditos',      icon: CreditCard },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
@@ -43,7 +43,15 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
     location.pathname.startsWith('/operaciones')
   );
 
-  const isAdmin = true; // TODO: user?.rol === 'ADMINISTRADOR' || user?.rol === 'ADMIN' || user?.rol === 'GERENTE';
+  const adminRole = isAdmin(user?.rol);
+  const gerenteOrAdminRole = isGerenteOrAdmin(user?.rol);
+
+  // Operaciones dinámicas según rol: 'Autorizar Vales' solo visible para Gerencia o Administradores
+  const operacionesItems = [
+    ...baseOperacionesItems.slice(0, 4),
+    ...(gerenteOrAdminRole ? [{ to: '/operaciones/vales/autorizar', label: 'Autorizar Vales', icon: ShieldCheck }] : []),
+    ...baseOperacionesItems.slice(4)
+  ];
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -116,13 +124,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             )}
           </div>
 
-          {isAdmin && (
+          {/* Sección de Gestión y Administración (Gerencia y Admins) */}
+          {gerenteOrAdminRole && (
             <>
-              {/* Separator */}
               <div className="pt-3 pb-1">
-                <p className="text-primary-500 text-xs font-semibold uppercase tracking-widest px-3">Configuración</p>
+                <p className="text-primary-500 text-xs font-semibold uppercase tracking-widest px-3">Gestión & Control</p>
               </div>
-              
+
               {/* Catalogos submenu */}
               <div>
                 <button
@@ -143,21 +151,30 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
                   </div>
                 )}
               </div>
-              
+
               <NavLink to="/sucursales" className={navLinkClass} onClick={onClose}>
                 <Building2 size={18} />Sucursales
               </NavLink>
-              
+
               <NavLink to="/terminales" className={navLinkClass} onClick={onClose}>
                 <MonitorSmartphone size={18} />Terminales
               </NavLink>
-              
+            </>
+          )}
+
+          {/* Configuración y Usuarios del Sistema (Exclusivo Administrador) */}
+          {adminRole && (
+            <>
+              <div className="pt-3 pb-1">
+                <p className="text-primary-500 text-xs font-semibold uppercase tracking-widest px-3">Administración</p>
+              </div>
+
               <NavLink to="/usuarios" className={navLinkClass} onClick={onClose}>
                 <UserCog size={18} />Usuarios del Sistema
               </NavLink>
-              
+
               <NavLink to="/configuracion" className={navLinkClass} onClick={onClose}>
-                <Settings size={18} />Configuración
+                <Settings size={18} />Configuración General
               </NavLink>
             </>
           )}

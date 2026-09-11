@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import api from '../../services/api';
-
+import { useAuth } from '../../context/AuthContext';
+import { isAdmin } from '../../utils/rbac';
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mantenimiento, setMantenimiento] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     const checkMantenimiento = () => {
@@ -46,9 +48,11 @@ const Layout: React.FC = () => {
             <AlertTriangle size={18} />
             <span>⚠️ MODO MANTENIMIENTO ACTIVO: Las terminales POS (Sunmi/Urovo) y operaciones bancarias están pausadas.</span>
           </div>
-          <Link to="/configuracion" className="underline text-xs bg-red-700 hover:bg-red-800 px-2.5 py-1 rounded transition">
-            Configuración
-          </Link>
+          {isAdmin(user?.rol) && (
+            <Link to="/configuracion" className="underline text-xs bg-red-700 hover:bg-red-800 px-2.5 py-1 rounded transition">
+              Configuración
+            </Link>
+          )}
         </div>
       )}
 
