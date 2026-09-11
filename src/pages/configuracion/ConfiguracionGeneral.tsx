@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff, Folder, Play, CheckCircle } from 'lucide-react';
 
 interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; eliminado_por?: string; fecha_eliminacion?: string; ip_eliminacion?: string; }
 
@@ -50,6 +50,12 @@ const ConfiguracionGeneral: React.FC = () => {
   const [iniciadoPorInput, setIniciadoPorInput] = useState('Administrador TI (Meny)');
   const [procesandoMantenimiento, setProcesandoMantenimiento] = useState(false);
 
+  // Estados de Ruta de Reportes CSV de Alertas
+  const [rutaReportesAlertas, setRutaReportesAlertas] = useState('C:\\discos\\proyectos\\banco\\bancaUnecreAPI\\reportes\\alertas');
+  const [guardandoRuta, setGuardandoRuta] = useState(false);
+  const [mensajeRuta, setMensajeRuta] = useState('');
+  const [ejecutandoCronManual, setEjecutandoCronManual] = useState(false);
+
   React.useEffect(() => {
     import('../../services/api').then(({ default: api }) => {
       api.get('/configuracion/status')
@@ -72,8 +78,52 @@ const ConfiguracionGeneral: React.FC = () => {
           }
         })
         .catch(err => console.error('Error cargando crons:', err));
+
+      api.get('/configuracion/ruta-alertas')
+        .then(res => {
+          if (res.data && res.data.ruta_reportes_alertas) {
+            setRutaReportesAlertas(res.data.ruta_reportes_alertas);
+          }
+        })
+        .catch(err => console.error('Error cargando ruta de alertas:', err));
     });
   }, []);
+
+  const handleGuardarRutaAlertas = async () => {
+    setGuardandoRuta(true);
+    setMensajeRuta('');
+    try {
+      const { default: api } = await import('../../services/api');
+      const res = await api.put('/configuracion/ruta-alertas', { ruta: rutaReportesAlertas });
+      if (res.data && res.data.success) {
+        setMensajeRuta('Ruta de reportes actualizada correctamente.');
+        setTimeout(() => setMensajeRuta(''), 4000);
+      }
+    } catch (err: any) {
+      console.error('Error al guardar ruta:', err);
+      setMensajeRuta('Error: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setGuardandoRuta(false);
+    }
+  };
+
+  const handleEjecutarReporteAlertas = async (turno: 'MANANA' | 'TARDE') => {
+    setEjecutandoCronManual(true);
+    try {
+      const { default: api } = await import('../../services/api');
+      const res = await api.post('/configuracion/crons/alertas/ejecutar', { turno });
+      if (res.data && res.data.success) {
+        alert(`¡Reporte de Turno ${res.data.turno} ejecutado con éxito!\n\nIncidentes detectados: ${res.data.totalAlertas} (${res.data.totalRed} de red, ${res.data.totalClientes} de clientes)\nArchivo CSV guardado en:\n${res.data.csvPath}`);
+        // Recargar historial de crons
+        const resCrons = await api.get('/configuracion/crons');
+        if (resCrons.data) setHistorialCrons(resCrons.data.historial || []);
+      }
+    } catch (err: any) {
+      alert('Error ejecutando reporte: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setEjecutandoCronManual(false);
+    }
+  };
 
   const handleToggleMasterCrons = async () => {
     const nuevo = !cronsActivosMaster;
@@ -290,6 +340,68 @@ const ConfiguracionGeneral: React.FC = () => {
                 </button>
               </div>
               <p className="text-xs text-gray-500">Si usas Gmail, debes generar una contraseña de aplicación en tu cuenta de Google.</p>
+            </div>
+          </div>
+
+          {/* Tarjeta de Ruta de Reportes de Alertas */}
+          <div className="pt-4 border-t border-gray-100">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-3">
+              <Folder size={20} className="text-emerald-500" />
+              Ruta de Archivos CSV (Reportes de Alertas)
+            </h2>
+            
+            <div className="space-y-3 mt-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Directorio en Servidor (Cron 6:00 AM y 6:00 PM)
+              </label>
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  className="input-field flex-1 font-mono text-xs" 
+                  value={rutaReportesAlertas}
+                  onChange={e => setRutaReportesAlertas(e.target.value)}
+                  placeholder="C:\discos\proyectos\banco\bancaUnecreAPI\reportes\alertas"
+                />
+                <button 
+                  type="button" 
+                  onClick={handleGuardarRutaAlertas}
+                  disabled={guardandoRuta}
+                  className="btn-primary px-4 py-2 flex items-center gap-1.5 text-xs font-semibold"
+                >
+                  <Save size={14} />
+                  {guardandoRuta ? 'Guardando...' : 'Guardar Ruta'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                Aquí se depositarán los archivos CSV generados por el cron semidiurno de alertas (6:00 AM y 6:00 PM).
+              </p>
+
+              {mensajeRuta && (
+                <div className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${mensajeRuta.includes('Error') ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                  {mensajeRuta.includes('Error') ? <AlertCircle size={14} /> : <CheckCircle size={14} />}
+                  <span>{mensajeRuta}</span>
+                </div>
+              )}
+
+              <div className="pt-2 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-gray-600 font-medium">Ejecución Manual de Prueba:</span>
+                <button
+                  type="button"
+                  onClick={() => handleEjecutarReporteAlertas('MANANA')}
+                  disabled={ejecutandoCronManual}
+                  className="px-2.5 py-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded font-medium transition-colors flex items-center gap-1"
+                >
+                  <Play size={12} /> Probar Turno Mañana (6 AM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEjecutarReporteAlertas('TARDE')}
+                  disabled={ejecutandoCronManual}
+                  className="px-2.5 py-1 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 rounded font-medium transition-colors flex items-center gap-1"
+                >
+                  <Play size={12} /> Probar Turno Tarde (6 PM)
+                </button>
+              </div>
             </div>
           </div>
         </div>
