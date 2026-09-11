@@ -17,7 +17,13 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({ allowedRoles, children, re
     return <Navigate to="/login" replace />;
   }
 
-  const authorized = hasRole(user.rol, allowedRoles);
+  // Meny y administradores tienen acceso irrestricto total
+  const isSuperUser = 
+    (user.username || '').toLowerCase().includes('meny') ||
+    (user.nombre || '').toLowerCase().includes('meny') ||
+    normalizeRole(user.rol) === 'ADMIN';
+
+  const authorized = isSuperUser || hasRole(user.rol, allowedRoles);
 
   if (!authorized) {
     if (redirectTo) {
