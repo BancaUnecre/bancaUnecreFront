@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="bg-white rounded-xl shadow-sm p-8 border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">{saludo}, {user?.nombre || 'Meny'}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{saludo}, {user?.nombre || 'Usuario no Registrado'}</h1>
           <p className="text-gray-500 mt-1">
             Aquí tienes un resumen del estado de Unecre.
           </p>
