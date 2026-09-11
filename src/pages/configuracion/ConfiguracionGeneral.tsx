@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff, Folder, Play, CheckCircle, FolderSearch, ChevronRight, CornerLeftUp, FolderPlus, HardDrive, X, CreditCard } from 'lucide-react';
+import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff, Folder, Play, CheckCircle, FolderSearch, ChevronRight, CornerLeftUp, FolderPlus, HardDrive, X, CreditCard, Database, Activity, ShieldCheck } from 'lucide-react';
 
 interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; eliminado_por?: string; fecha_eliminacion?: string; ip_eliminacion?: string; }
 
@@ -18,6 +18,37 @@ interface RegistroCronItem {
   estado: 'Exito' | 'Fallo';
   detalles_resultado?: string;
   notificado_por_correo?: boolean;
+}
+
+interface ConexionesData {
+  salud: {
+    estado: string;
+    mensaje: string;
+    bloqueos: number;
+  };
+  sql_server: {
+    base_datos: string;
+    total_conexiones: number;
+    conexiones_activas: number;
+    conexiones_dormidas: number;
+    hosts_distintos: number;
+    logins_distintos: number;
+    desglose_programas: Array<{
+      programa: string;
+      login_name: string;
+      conexiones: number;
+      ultima_peticion: string;
+    }>;
+  };
+  pool_sequelize: {
+    size: number;
+    available: number;
+    using: number;
+    waiting: number;
+    max: number;
+    min: number;
+  };
+  timestamp: string;
 }
 
 const ConfiguracionGeneral: React.FC = () => {
@@ -73,7 +104,27 @@ const ConfiguracionGeneral: React.FC = () => {
   const [nombreNuevaCarpeta, setNombreNuevaCarpeta] = useState('');
   const [creandoCarpeta, setCreandoCarpeta] = useState(false);
 
+  // Estados del Monitor de Conexiones en Vivo
+  const [monitorConexiones, setMonitorConexiones] = useState<ConexionesData | null>(null);
+  const [cargandoConexiones, setCargandoConexiones] = useState(false);
+
+  const cargarConexiones = async () => {
+    setCargandoConexiones(true);
+    try {
+      const { default: api } = await import('../../services/api');
+      const res = await api.get('/stats/conexiones');
+      if (res.data?.success) {
+        setMonitorConexiones(res.data.data);
+      }
+    } catch (e) {
+      console.error('Error cargando conexiones:', e);
+    } finally {
+      setCargandoConexiones(false);
+    }
+  };
+
   React.useEffect(() => {
+    cargarConexiones();
     import('../../services/api').then(({ default: api }) => {
       api.get('/configuracion/status')
         .then(res => {
@@ -707,6 +758,176 @@ const ConfiguracionGeneral: React.FC = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Panel 4: Monitor de Conexiones SQL Server (DMV) y Pool Sequelize */}
+        <div className="card p-6 space-y-4 md:col-span-2 border border-slate-200 shadow-sm rounded-xl bg-white">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+                <Database size={22} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  Monitor de Conexiones en Vivo y Salud de Base de Datos
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1.5 ${
+                    monitorConexiones?.salud.estado === 'OPTIMO'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : monitorConexiones?.salud.estado === 'ALERTA'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                      : 'bg-red-100 text-red-800 border border-red-200'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${
+                      monitorConexiones?.salud.estado === 'OPTIMO' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                    }`} />
+                    {monitorConexiones?.salud.estado || 'CARGANDO'}
+                  </span>
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Telemetría en tiempo real de SQL Server (`sys.dm_exec_sessions`) y conexiones activas del pool de la API
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={cargarConexiones}
+              disabled={cargandoConexiones}
+              className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors self-start sm:self-auto"
+              title="Refrescar métricas de conexiones ahora"
+            >
+              <RefreshCw size={14} className={cargandoConexiones ? 'animate-spin text-blue-600' : 'text-slate-500'} />
+              {cargandoConexiones ? 'Consultando DMV...' : 'Actualizar Conexiones'}
+            </button>
+          </div>
+
+          {/* KPI Cards de Salud de Conexiones */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+            {/* KPI 1: Base de Datos & Conexiones Totales */}
+            <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                BD: {monitorConexiones?.sql_server.base_datos || 'banco'}
+              </span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-slate-900">
+                  {monitorConexiones?.sql_server.total_conexiones || 0}
+                </span>
+                <span className="text-xs font-medium text-slate-600">conexiones vivas</span>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-500">
+                <span className="text-emerald-700 font-semibold">{monitorConexiones?.sql_server.conexiones_activas || 0} activas</span>
+                <span>·</span>
+                <span>{monitorConexiones?.sql_server.conexiones_dormidas || 0} inactivas</span>
+              </div>
+            </div>
+
+            {/* KPI 2: Pool Sequelize (API Node.js) */}
+            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+              <span className="text-[11px] font-semibold text-blue-700 uppercase tracking-wider block">
+                Pool de la API (Sequelize)
+              </span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-blue-900">
+                  {monitorConexiones?.pool_sequelize.using || 0} / {monitorConexiones?.pool_sequelize.max || 25}
+                </span>
+                <span className="text-xs font-medium text-blue-600">en ejecución</span>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-blue-600">
+                <span>{monitorConexiones?.pool_sequelize.available || 0} libres</span>
+                <span>·</span>
+                <span className={monitorConexiones?.pool_sequelize.waiting ? 'text-red-600 font-bold' : ''}>
+                  {monitorConexiones?.pool_sequelize.waiting || 0} en cola
+                </span>
+              </div>
+            </div>
+
+            {/* KPI 3: Bloqueos Transaccionales */}
+            <div className={`p-4 rounded-xl border ${
+              (monitorConexiones?.salud.bloqueos || 0) === 0
+                ? 'bg-emerald-50/50 border-emerald-100'
+                : 'bg-red-50 border-red-200'
+            }`}>
+              <span className={`text-[11px] font-semibold uppercase tracking-wider block ${
+                (monitorConexiones?.salud.bloqueos || 0) === 0 ? 'text-emerald-700' : 'text-red-700'
+              }`}>
+                Bloqueos Detectados
+              </span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className={`text-2xl font-black ${
+                  (monitorConexiones?.salud.bloqueos || 0) === 0 ? 'text-emerald-900' : 'text-red-900'
+                }`}>
+                  {monitorConexiones?.salud.bloqueos || 0}
+                </span>
+                <span className="text-xs font-medium text-gray-500">procesos bloqueados</span>
+              </div>
+              <div className="mt-2 text-[11px] font-medium text-emerald-800">
+                {(monitorConexiones?.salud.bloqueos || 0) === 0 ? 'Cero bloqueos (NOLOCK activo)' : 'Atención requerida'}
+              </div>
+            </div>
+
+            {/* KPI 4: Usuarios & Hosts */}
+            <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-100">
+              <span className="text-[11px] font-semibold text-purple-700 uppercase tracking-wider block">
+                Usuarios y Orígenes
+              </span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-2xl font-black text-purple-900">
+                  {monitorConexiones?.sql_server.logins_distintos || 1}
+                </span>
+                <span className="text-xs font-medium text-purple-600">logins SQL</span>
+              </div>
+              <div className="mt-2 text-[11px] text-purple-600">
+                Desde {monitorConexiones?.sql_server.hosts_distintos || 1} equipo(s)
+              </div>
+            </div>
+          </div>
+
+          {/* Tabla de Desglose de Conexiones por Aplicación */}
+          <div className="mt-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
+              Desglose de Conexiones Activas por Aplicación / Driver
+            </h3>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <table className="w-full text-left text-xs text-slate-600">
+                <thead className="bg-slate-50 text-slate-700 uppercase font-semibold text-[11px]">
+                  <tr>
+                    <th className="px-4 py-2.5">Aplicación / Driver</th>
+                    <th className="px-4 py-2.5">Usuario SQL</th>
+                    <th className="px-4 py-2.5 text-center">Conexiones Abiertas</th>
+                    <th className="px-4 py-2.5">Última Petición</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono">
+                  {monitorConexiones?.sql_server.desglose_programas && monitorConexiones.sql_server.desglose_programas.length > 0 ? (
+                    monitorConexiones.sql_server.desglose_programas.map((p, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/80">
+                        <td className="px-4 py-2.5 font-semibold text-slate-900">{p.programa}</td>
+                        <td className="px-4 py-2.5 text-slate-600">{p.login_name}</td>
+                        <td className="px-4 py-2.5 text-center font-bold text-blue-700">{p.conexiones}</td>
+                        <td className="px-4 py-2.5 text-slate-500">{p.ultima_peticion ? new Date(p.ultima_peticion).toLocaleTimeString() : 'En curso'}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-4 text-center text-slate-400">
+                        Sin conexiones registradas en este instante.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+              <span>Aislamiento SQL Server: Consultas con `READ_UNCOMMITTED` automático para prevenir bloqueos en base compartida.</span>
+            </div>
+            <span className="text-[11px] text-slate-400 font-mono">
+              Actualizado: {monitorConexiones?.timestamp ? new Date(monitorConexiones.timestamp).toLocaleTimeString() : '-'}
+            </span>
           </div>
         </div>
       {modalMantenimientoOpen && (
