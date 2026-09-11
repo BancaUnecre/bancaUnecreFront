@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff, Folder, Play, CheckCircle } from 'lucide-react';
+import { Settings, Save, AlertCircle, RefreshCw, Server, Bell, Key, Plus, Trash2, Eye, EyeOff, Folder, Play, CheckCircle, FolderSearch, ChevronRight, CornerLeftUp, FolderPlus, HardDrive, X } from 'lucide-react';
 
 interface Correo { id: number; correo: string; tipo: 'IT' | 'EJECUTIVO'; activo: boolean; eliminado_por?: string; fecha_eliminacion?: string; ip_eliminacion?: string; }
 
@@ -56,6 +56,18 @@ const ConfiguracionGeneral: React.FC = () => {
   const [mensajeRuta, setMensajeRuta] = useState('');
   const [ejecutandoCronManual, setEjecutandoCronManual] = useState(false);
 
+  // Estados del Explorador de Directorios del Servidor
+  const [modalExploradorOpen, setModalExploradorOpen] = useState(false);
+  const [exploradorRutaActual, setExploradorRutaActual] = useState('');
+  const [exploradorRutaPadre, setExploradorRutaPadre] = useState<string | null>(null);
+  const [exploradorCarpetas, setExploradorCarpetas] = useState<string[]>([]);
+  const [exploradorUnidades, setExploradorUnidades] = useState<string[]>([]);
+  const [cargandoExplorador, setCargandoExplorador] = useState(false);
+  const [errorExplorador, setErrorExplorador] = useState('');
+  const [mostrarCrearCarpeta, setMostrarCrearCarpeta] = useState(false);
+  const [nombreNuevaCarpeta, setNombreNuevaCarpeta] = useState('');
+  const [creandoCarpeta, setCreandoCarpeta] = useState(false);
+
   React.useEffect(() => {
     import('../../services/api').then(({ default: api }) => {
       api.get('/configuracion/status')
@@ -105,6 +117,71 @@ const ConfiguracionGeneral: React.FC = () => {
     } finally {
       setGuardandoRuta(false);
     }
+  };
+
+  const cargarDirectorio = async (ruta?: string) => {
+    setCargandoExplorador(true);
+    setErrorExplorador('');
+    try {
+      const { default: api } = await import('../../services/api');
+      const res = await api.get('/configuracion/explorar-directorios', { params: { ruta } });
+      if (res.data && res.data.success) {
+        setExploradorRutaActual(res.data.rutaActual);
+        setExploradorRutaPadre(res.data.rutaPadre);
+        setExploradorCarpetas(res.data.carpetas || []);
+        setExploradorUnidades(res.data.unidades || []);
+      }
+    } catch (err: any) {
+      console.error('Error al explorar directorio:', err);
+      setErrorExplorador(err.response?.data?.error || err.message || 'Error al leer directorio del servidor');
+    } finally {
+      setCargandoExplorador(false);
+    }
+  };
+
+  const handleAbrirExplorador = (rutaInicial?: string) => {
+    setModalExploradorOpen(true);
+    setMostrarCrearCarpeta(false);
+    setNombreNuevaCarpeta('');
+    cargarDirectorio(rutaInicial || rutaReportesAlertas);
+  };
+
+  const handleEntrarCarpeta = (nombre: string) => {
+    const separador = exploradorRutaActual.endsWith('\\') || exploradorRutaActual.endsWith('/') ? '' : '\\';
+    const nuevaRuta = `${exploradorRutaActual}${separador}${nombre}`;
+    cargarDirectorio(nuevaRuta);
+  };
+
+  const handleSubirNivel = () => {
+    if (exploradorRutaPadre) {
+      cargarDirectorio(exploradorRutaPadre);
+    }
+  };
+
+  const handleCrearCarpeta = async () => {
+    if (!nombreNuevaCarpeta.trim()) return;
+    setCreandoCarpeta(true);
+    try {
+      const { default: api } = await import('../../services/api');
+      const res = await api.post('/configuracion/crear-directorio', {
+        rutaBase: exploradorRutaActual,
+        nombreCarpeta: nombreNuevaCarpeta.trim()
+      });
+      if (res.data && res.data.success) {
+        setNombreNuevaCarpeta('');
+        setMostrarCrearCarpeta(false);
+        cargarDirectorio(exploradorRutaActual);
+      }
+    } catch (err: any) {
+      alert('Error creando carpeta: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setCreandoCarpeta(false);
+    }
+  };
+
+  const handleSeleccionarCarpeta = () => {
+    setRutaReportesAlertas(exploradorRutaActual);
+    setModalExploradorOpen(false);
   };
 
   const handleEjecutarReporteAlertas = async (turno: 'MANANA' | 'TARDE') => {
@@ -354,7 +431,7 @@ const ConfiguracionGeneral: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700">
                 Directorio en Servidor (Cron 6:00 AM y 6:00 PM)
               </label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap sm:flex-nowrap gap-2">
                 <input 
                   type="text" 
                   className="input-field flex-1 font-mono text-xs" 
@@ -364,9 +441,18 @@ const ConfiguracionGeneral: React.FC = () => {
                 />
                 <button 
                   type="button" 
+                  onClick={() => handleAbrirExplorador(rutaReportesAlertas)}
+                  className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap shadow-xs"
+                  title="Examinar y buscar carpetas en el servidor"
+                >
+                  <FolderSearch size={15} className="text-emerald-600" />
+                  Buscar Carpeta
+                </button>
+                <button 
+                  type="button" 
                   onClick={handleGuardarRutaAlertas}
                   disabled={guardandoRuta}
-                  className="btn-primary px-4 py-2 flex items-center gap-1.5 text-xs font-semibold"
+                  className="btn-primary px-4 py-2 flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap"
                 >
                   <Save size={14} />
                   {guardandoRuta ? 'Guardando...' : 'Guardar Ruta'}
@@ -625,6 +711,206 @@ const ConfiguracionGeneral: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Explorador de Carpetas del Servidor */}
+      {modalExploradorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 border border-gray-100 flex flex-col max-h-[85vh]">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                  <FolderSearch size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 text-base">Explorador de Carpetas del Servidor</h3>
+                  <p className="text-xs text-gray-500">Selecciona la carpeta física en el servidor donde se guardarán los reportes CSV</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalExploradorOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Selector de Unidades de Disco (Windows) */}
+            {exploradorUnidades.length > 0 && (
+              <div className="flex items-center gap-1.5 pt-3 pb-1 overflow-x-auto text-xs">
+                <span className="text-gray-400 font-medium flex items-center gap-1 mr-1">
+                  <HardDrive size={13} /> Unidades:
+                </span>
+                {exploradorUnidades.map(u => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => cargarDirectorio(u)}
+                    className={`px-2.5 py-1 rounded border text-xs font-mono font-semibold transition-colors flex items-center gap-1 ${
+                      exploradorRutaActual.startsWith(u)
+                        ? 'bg-primary-50 text-primary-700 border-primary-300'
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <HardDrive size={12} />
+                    {u}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Barra de Navegación y Ruta Actual */}
+            <div className="pt-2 pb-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSubirNivel}
+                  disabled={!exploradorRutaPadre || cargandoExplorador}
+                  className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed text-gray-700 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                  title="Subir un nivel (Carpeta superior)"
+                >
+                  <CornerLeftUp size={14} /> Subir
+                </button>
+
+                <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 font-mono text-xs text-gray-800 truncate" title={exploradorRutaActual}>
+                  {exploradorRutaActual}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => cargarDirectorio(exploradorRutaActual)}
+                  disabled={cargandoExplorador}
+                  className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+                  title="Recargar carpeta"
+                >
+                  <RefreshCw size={14} className={cargandoExplorador ? 'animate-spin' : ''} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMostrarCrearCarpeta(!mostrarCrearCarpeta)}
+                  className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                  title="Crear nueva subcarpeta"
+                >
+                  <FolderPlus size={14} /> Nueva Carpeta
+                </button>
+              </div>
+
+              {/* Input desplegable para crear carpeta */}
+              {mostrarCrearCarpeta && (
+                <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-lg flex items-center gap-2 animate-fade-in">
+                  <input
+                    type="text"
+                    className="input-field text-xs py-1 flex-1 bg-white"
+                    placeholder="Nombre de la nueva subcarpeta (ej. reportes_2026)..."
+                    value={nombreNuevaCarpeta}
+                    onChange={e => setNombreNuevaCarpeta(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleCrearCarpeta()}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCrearCarpeta}
+                    disabled={creandoCarpeta || !nombreNuevaCarpeta.trim()}
+                    className="btn-primary text-xs py-1 px-3"
+                  >
+                    {creandoCarpeta ? 'Creando...' : 'Crear'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMostrarCrearCarpeta(false); setNombreNuevaCarpeta(''); }}
+                    className="text-gray-400 hover:text-gray-600 text-xs px-1"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Lista de Carpetas */}
+            <div className="flex-1 overflow-y-auto border border-gray-200 rounded-lg p-2 divide-y divide-gray-100 bg-gray-50/50 min-h-[200px] max-h-[300px]">
+              {cargandoExplorador ? (
+                <div className="flex flex-col items-center justify-center h-48 text-gray-400 text-xs gap-2">
+                  <RefreshCw size={24} className="animate-spin text-primary-600" />
+                  <span>Leyendo directorios del servidor...</span>
+                </div>
+              ) : errorExplorador ? (
+                <div className="p-4 bg-red-50 text-red-700 rounded-lg text-xs flex items-center gap-2">
+                  <AlertCircle size={16} />
+                  <span>{errorExplorador}</span>
+                </div>
+              ) : exploradorCarpetas.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 text-gray-400 text-xs gap-1">
+                  <Folder size={28} className="opacity-40" />
+                  <span className="font-medium">Carpeta vacía</span>
+                  <span className="text-[11px] text-gray-400">No contiene subdirectorios visibles. Puedes seleccionar esta carpeta o crear una nueva.</span>
+                </div>
+              ) : (
+                exploradorCarpetas.map((nombre) => (
+                  <div
+                    key={nombre}
+                    onClick={() => handleEntrarCarpeta(nombre)}
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-white hover:shadow-xs cursor-pointer transition-all group"
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Folder size={18} className="text-amber-500 fill-amber-100 shrink-0 group-hover:text-amber-600" />
+                      <span className="text-xs font-medium text-gray-800 truncate">{nombre}</span>
+                    </div>
+                    <ChevronRight size={14} className="text-gray-300 group-hover:text-gray-600 shrink-0" />
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Rutas Rápidas Sugeridas */}
+            <div className="pt-3 flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+              <span className="font-semibold text-gray-600 text-[11px]">Accesos rápidos:</span>
+              <button
+                type="button"
+                onClick={() => cargarDirectorio('C:\\discos\\proyectos\\banco\\bancaUnecreAPI\\reportes\\alertas')}
+                className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-[11px] font-mono transition-colors"
+              >
+                /reportes/alertas
+              </button>
+              <button
+                type="button"
+                onClick={() => cargarDirectorio('C:\\discos\\proyectos\\banco\\bancaUnecreAPI\\reportes')}
+                className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-[11px] font-mono transition-colors"
+              >
+                /reportes
+              </button>
+              <button
+                type="button"
+                onClick={() => cargarDirectorio('C:\\')}
+                className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-[11px] font-mono transition-colors"
+              >
+                C:\
+              </button>
+            </div>
+
+            {/* Footer Modal */}
+            <div className="flex items-center justify-between border-t border-gray-100 pt-4 mt-3">
+              <div className="text-xs text-gray-500 truncate max-w-sm">
+                <span className="font-medium text-gray-700">Ruta elegida:</span> <span className="font-mono text-gray-800">{exploradorRutaActual}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalExploradorOpen(false)}
+                  className="btn-secondary text-xs px-3 py-2"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSeleccionarCarpeta}
+                  className="btn-primary text-xs px-4 py-2 flex items-center gap-1.5 font-semibold"
+                >
+                  <CheckCircle size={14} /> Seleccionar Esta Carpeta
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
