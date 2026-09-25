@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { MessageCircle, QrCode, Building, Banknote, Share2, CreditCard, ShieldCheck, Download, Copy, Check, XCircle } from 'lucide-react';
 import api from '../../services/api';
@@ -82,11 +82,11 @@ const GeneradorVales: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   const handleCancelarVale = async (valeId: number) => {
-    if (!confirm('Â¿EstÃ¡s seguro de cancelar este vale?')) return;
+    if (!confirm('¿Estás seguro de cancelar este vale?')) return;
     try {
       const response = await api.post('/terminal-vales/cancelar/' + valeId);
       if (response.data.success) {
-        alert('Vale cancelado con Ã©xito');
+        alert('Vale cancelado con éxito');
         setQrCodeData(null);
         fetchValesActivos();
       }
@@ -173,7 +173,7 @@ const GeneradorVales: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Generador de Vales</h1>
         <p className="text-gray-500 text-sm mt-0.5">
-          Crea vales digitales con cÃ³digo QR para pagos en empresas afiliadas.
+          Crea vales digitales con código QR para pagos en empresas afiliadas.
         </p>
       </div>
 
@@ -270,7 +270,7 @@ const GeneradorVales: React.FC = () => {
                   onChange={(e) => setRequiereAutorizacion(e.target.checked)}
                   className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
                 />
-                <span className="text-sm font-medium text-gray-700">Requerir mi autorizaciÃ³n (Web) en tiempo real al cobrar</span>
+                <span className="text-sm font-medium text-gray-700">Requerir mi autorización (Web) en tiempo real al cobrar</span>
               </label>
             </div>
 
@@ -321,8 +321,8 @@ const GeneradorVales: React.FC = () => {
           ) : (
             <div className="text-center text-gray-400 p-8">
               <Banknote size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="font-medium text-gray-600 mb-1">NingÃºn vale generado</p>
-              <p className="text-sm">Llene el formulario para generar el cÃ³digo QR.</p>
+              <p className="font-medium text-gray-600 mb-1">Ningún vale generado</p>
+              <p className="text-sm">Llene el formulario para generar el código QR.</p>
             </div>
           )}
         </div>
@@ -344,7 +344,7 @@ const GeneradorVales: React.FC = () => {
                 <div>
                   <div className="font-medium text-gray-900">Token: <span className="font-bold">{vale.token_seguro}</span></div>
                     <div className="text-sm text-gray-500">
-                      Monto LÃ­mite: ${Number(vale.monto_limite).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN â€¢ Empresa: <span className="font-medium text-gray-700">{empresas.find(e => Number(e.id) === vale.empresa_id_destino)?.nombre_comercial || empresas.find(e => Number(e.id) === vale.empresa_id_destino)?.razon_social || 'Cualquier empresa'}</span>
+                      Monto Límite: ${Number(vale.monto_limite).toLocaleString('es-MX', { minimumFractionDigits: 2 })} MXN • Empresa: <span className="font-medium text-gray-700">{empresas.find(e => Number(e.id) === vale.empresa_id_destino)?.nombre_comercial || empresas.find(e => Number(e.id) === vale.empresa_id_destino)?.razon_social || 'Cualquier empresa'}</span>
                     </div>
                 </div>
                 <div className="flex gap-2">

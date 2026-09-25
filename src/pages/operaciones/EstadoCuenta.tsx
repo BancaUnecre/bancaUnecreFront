@@ -240,7 +240,7 @@ const EstadoCuenta: React.FC = () => {
 
           {cuenta && (
             <div className="card p-4 space-y-3">
-              <h3 className="text-sm font-bold text-gray-700">3. PerÃ­odo</h3>
+              <h3 className="text-sm font-bold text-gray-700">3. Período</h3>
               <div>
                 <label className="label-field text-xs">Desde</label>
                 <input type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} className="input-field text-sm" />
@@ -281,7 +281,7 @@ const EstadoCuenta: React.FC = () => {
                   <div className="text-right">
                     <p className="text-primary-300 text-xs">Saldo Actual</p>
                     <p className="text-3xl font-bold text-white">{fmtMoney(cuenta.saldo)}</p>
-                    <p className="text-primary-300 text-xs mt-1">{cuenta.tipo_cuenta} Â· {cuenta.moneda}</p>
+                    <p className="text-primary-300 text-xs mt-1">{cuenta.tipo_cuenta} · {cuenta.moneda}</p>
                   </div>
                 </div>
               </div>
@@ -322,7 +322,7 @@ const EstadoCuenta: React.FC = () => {
                       </thead>
                       <tbody>
                         {movimientos.length === 0 ? (
-                          <tr><td colSpan={7} className="text-center py-10 text-gray-400">Sin movimientos en el perÃ­odo seleccionado</td></tr>
+                          <tr><td colSpan={7} className="text-center py-10 text-gray-400">Sin movimientos en el período seleccionado</td></tr>
                         ) : movimientos.map((m, i) => {
                           const cargo = isCargo(m);
                           const saldoTras = cargo ? m.saldo_origen_despues : m.saldo_origen_antes + Number(m.importe);
@@ -350,10 +350,10 @@ const EstadoCuenta: React.FC = () => {
                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${tipoColor[m.tipo] ?? 'bg-gray-100 text-gray-600'}`}>{m.tipo}</span>
                               </td>
                               <td className="px-4 py-3 text-right">
-                                {cargo ? <span className="font-semibold text-red-600">- {fmtMoney(Number(m.importe))}</span> : <span className="text-gray-300">â€”</span>}
+                                {cargo ? <span className="font-semibold text-red-600">- {fmtMoney(Number(m.importe))}</span> : <span className="text-gray-300">—</span>}
                               </td>
                               <td className="px-4 py-3 text-right">
-                                {!cargo ? <span className="font-semibold text-emerald-600">+ {fmtMoney(Number(m.importe))}</span> : <span className="text-gray-300">â€”</span>}
+                                {!cargo ? <span className="font-semibold text-emerald-600">+ {fmtMoney(Number(m.importe))}</span> : <span className="text-gray-300">—</span>}
                               </td>
                               <td className="px-4 py-3 text-right"><span className="font-bold text-gray-800">{fmtMoney(saldoTras)}</span></td>
                             </tr>
@@ -363,7 +363,7 @@ const EstadoCuenta: React.FC = () => {
                       {movimientos.length > 0 && (
                         <tfoot>
                           <tr className="bg-primary-50 border-t-2 border-primary-200">
-                            <td colSpan={4} className="px-4 py-3 text-sm font-bold text-primary-800">TOTALES DEL PERÃODO</td>
+                            <td colSpan={4} className="px-4 py-3 text-sm font-bold text-primary-800">TOTALES DEL PERÍODO</td>
                             <td className="px-4 py-3 text-right font-bold text-red-600">- {fmtMoney(totalCargos)}</td>
                             <td className="px-4 py-3 text-right font-bold text-emerald-600">+ {fmtMoney(totalAbonos)}</td>
                             <td className="px-4 py-3 text-right font-bold text-primary-800">{fmtMoney(cuenta.saldo)}</td>

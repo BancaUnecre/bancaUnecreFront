@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import {
@@ -78,7 +78,7 @@ const EmpresaDetalle: React.FC = () => {
   };
 
   const removeRestriccion = async (resId: number) => {
-    if(!confirm("Â¿Remover comercio autorizado?")) return;
+    if(!confirm("¿Remover comercio autorizado?")) return;
     try {
       await fetch(`https://bancaunecre.com/api/empresas-restricciones/${resId}`, {
         method: 'DELETE',
@@ -195,7 +195,7 @@ const EmpresaDetalle: React.FC = () => {
       let msg = serverMsg;
       if (serverErr.includes('notNull Violation')) {
         const CAMPO_LABELS: Record<string, string> = {
-          razon_social: 'RazÃ³n Social', rfc: 'RFC',
+          razon_social: 'Razón Social', rfc: 'RFC',
         };
         const matches = serverErr.match(/empresas\.(\w+) cannot be null/gi) ?? [];
         const campos = matches.map((m: string) => {
@@ -208,7 +208,7 @@ const EmpresaDetalle: React.FC = () => {
       } else if (serverErr.includes('UNIQUE') || serverErr.includes('duplicate') || serverErr === 'Validation error') {
         msg = 'Ya existe una empresa con ese RFC.';
       } else if (serverErr.includes('CHECK constraint')) {
-        msg = 'Valor no permitido en algÃºn campo. Revisa los datos ingresados.';
+        msg = 'Valor no permitido en algún campo. Revisa los datos ingresados.';
       } else if (serverErr) {
         msg = `${serverMsg}: ${serverErr}`;
       }
@@ -259,7 +259,7 @@ const EmpresaDetalle: React.FC = () => {
     const errs: Record<string, string> = {};
     if (!vincForm.cliente_id) errs.cliente = 'Selecciona un cliente';
     if (!vincForm.cuenta_id) errs.cuenta = 'Selecciona una cuenta';
-    if (vincForm.limite_credito < 0) errs.limite = 'El lÃ­mite no puede ser negativo';
+    if (vincForm.limite_credito < 0) errs.limite = 'El límite no puede ser negativo';
     setVincErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -350,16 +350,16 @@ const EmpresaDetalle: React.FC = () => {
 
       {
         key: 'tipo_vinculo',
-        header: 'Tipo de VÃ­nculo',
+        header: 'Tipo de Vínculo',
         render: r => (
           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
               r.tipo_vinculo === 'EMPLEADO_NOMINA' ? 'bg-blue-100 text-blue-800' : 
               r.tipo_vinculo === 'EMPLEADO_VIATICOS' ? 'bg-amber-100 text-amber-800' : 
               'bg-purple-100 text-purple-800'
             }`}>
-              {r.tipo_vinculo === 'EMPLEADO_NOMINA' ? 'ðŸ’¼ NÃ³mina (B2B)' : 
-               r.tipo_vinculo === 'EMPLEADO_VIATICOS' ? 'ðŸ¢ ViÃ¡ticos (B2B)' : 
-               'ðŸ’³ Comercial (B2C)'}
+              {r.tipo_vinculo === 'EMPLEADO_NOMINA' ? '💼 Nómina (B2B)' : 
+               r.tipo_vinculo === 'EMPLEADO_VIATICOS' ? '🏢 Viáticos (B2B)' : 
+               '💳 Comercial (B2C)'}
             </span>
         )
       },
@@ -379,18 +379,18 @@ const EmpresaDetalle: React.FC = () => {
       render: r => (
         <div>
           <p className="font-mono text-xs font-semibold text-gray-800">{r.cuenta_numero ?? `Cuenta #${r.cuenta_id}`}</p>
-          <p className="text-xs text-gray-500">{r.cuenta_tipo ?? ''} Â· {r.cuenta_moneda ?? 'MXN'}</p>
+          <p className="text-xs text-gray-500">{r.cuenta_tipo ?? ''} · {r.cuenta_moneda ?? 'MXN'}</p>
         </div>
       ),
     },
     {
       key: 'limite_credito',
-      header: 'LÃ­mite CrÃ©dito',
+      header: 'Límite Crédito',
       render: r => <span className="font-semibold text-blue-700">{fmtMoney(r.limite_credito)}</span>,
     },
     {
       key: 'total_debito',
-      header: 'Total DÃ©bito',
+      header: 'Total Débito',
       render: r => <span className={r.total_debito > 0 ? 'font-semibold text-red-600' : 'text-gray-400'}>{fmtMoney(r.total_debito)}</span>,
     },
     {
@@ -455,7 +455,7 @@ const EmpresaDetalle: React.FC = () => {
               }`}
             >
               <Building2 size={16} className="inline mr-2" />
-              InformaciÃ³n General
+              Información General
             </button>
             {!isNew && (
               <button
@@ -506,7 +506,7 @@ const EmpresaDetalle: React.FC = () => {
                 <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-800 mb-1">Logotipo de la empresa</h3>
-                  <p className="text-sm text-gray-500 mb-3">PNG, JPG, SVG Â· 200Ã—200px recomendado</p>
+                  <p className="text-sm text-gray-500 mb-3">PNG, JPG, SVG · 200×200px recomendado</p>
                   <div className="flex gap-2">
                     <button type="button" onClick={() => logoInputRef.current?.click()} className="btn-secondary text-xs py-1.5 px-3">
                       <Upload size={13} />{logoPreview ? 'Cambiar' : 'Subir'} imagen
@@ -522,7 +522,7 @@ const EmpresaDetalle: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="md:col-span-2">
-                  <label className="label-field">RazÃ³n Social <span className="text-red-500">*</span></label>
+                  <label className="label-field">Razón Social <span className="text-red-500">*</span></label>
                   <input {...register('razon_social', { required: 'Campo requerido' })} className={`input-field ${errors.razon_social ? 'border-red-400' : ''}`} placeholder="Empresa SA de CV" />
                   {errors.razon_social && <p className="text-red-500 text-xs mt-1">{errors.razon_social.message}</p>}
                 </div>
@@ -540,8 +540,8 @@ const EmpresaDetalle: React.FC = () => {
                   <input {...register('sector')} className="input-field" placeholder="Comercio, Servicios, etc." />
                 </div>
                 <div>
-                  <label className="label-field">TelÃ©fono</label>
-                  <input {...register('telefono')} className="input-field" placeholder="10 dÃ­gitos" />
+                  <label className="label-field">Teléfono</label>
+                  <input {...register('telefono')} className="input-field" placeholder="10 dígitos" />
                 </div>
                 <div>
                   <label className="label-field">Email de Contacto</label>
@@ -549,7 +549,7 @@ const EmpresaDetalle: React.FC = () => {
                 </div>
                 <div className="md:col-span-2">
                   <label className="label-field">Domicilio Fiscal</label>
-                  <textarea {...register('domicilio_fiscal')} className="input-field h-20 resize-none" placeholder="Calle, nÃºmero, colonia, ciudad, estado, CP" />
+                  <textarea {...register('domicilio_fiscal')} className="input-field h-20 resize-none" placeholder="Calle, número, colonia, ciudad, estado, CP" />
                 </div>
                 <div className="flex items-center gap-3">
                   <input type="checkbox" id="activo" {...register('activo')} className="w-4 h-4 rounded accent-primary-700" />
@@ -573,8 +573,8 @@ const EmpresaDetalle: React.FC = () => {
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex items-start gap-3">
                 <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                 <div>
-                  <h4 className="font-semibold text-blue-900">ConfiguraciÃ³n de Red Cerrada (Vales de NÃ³mina)</h4>
-                  <p className="text-sm text-blue-800 mt-1">Si esta lista estÃ¡ vacÃ­a, tus empleados podrÃ¡n comprar a crÃ©dito en cualquier comercio de la red Unecre. Al agregar al menos 1 comercio a esta lista, la red se "cierra" y <strong>sÃ³lo</strong> podrÃ¡n comprar en los comercios autorizados aquÃ­.</p>
+                  <h4 className="font-semibold text-blue-900">Configuración de Red Cerrada (Vales de Nómina)</h4>
+                  <p className="text-sm text-blue-800 mt-1">Si esta lista está vacía, tus empleados podrán comprar a crédito en cualquier comercio de la red Unecre. Al agregar al menos 1 comercio a esta lista, la red se "cierra" y <strong>sólo</strong> podrán comprar en los comercios autorizados aquí.</p>
                 </div>
               </div>
               
@@ -635,7 +635,7 @@ const EmpresaDetalle: React.FC = () => {
                 <h3 className="font-semibold text-gray-800">Clientes y Cuentas Vinculadas</h3>
                 <div className="flex gap-2">
                   <button onClick={descargarNomina} className="btn-secondary text-sm">
-                    <Download size={15} className="mr-1 inline" /> Reporte NÃ³mina
+                    <Download size={15} className="mr-1 inline" /> Reporte Nómina
                   </button>
                   <button onClick={openVincular} className="btn-primary">
                     <Plus size={15} />Vincular Cliente
@@ -728,7 +728,7 @@ const EmpresaDetalle: React.FC = () => {
                   <option value={0}>Seleccionar cuenta...</option>
                   {cuentasCliente.map(cu => (
                     <option key={cu.id} value={cu.id}>
-                      {cu.numero_cuenta} Â· {cu.tipo_cuenta} Â· {cu.moneda}
+                      {cu.numero_cuenta} · {cu.tipo_cuenta} · {cu.moneda}
                     </option>
                   ))}
                 </select>
@@ -741,11 +741,11 @@ const EmpresaDetalle: React.FC = () => {
             
             
             <div className="space-y-4">
-              <label className="label-field block mb-2">Modalidades de VinculaciÃ³n y LÃ­mites de CrÃ©dito</label>
+              <label className="label-field block mb-2">Modalidades de Vinculación y Límites de Crédito</label>
               
               <div className="p-3 border border-gray-200 rounded-lg flex items-center gap-4 bg-gray-50">
                 <input type="checkbox" checked={vincForm.modalidades.CLIENTE_COMERCIAL.selected} onChange={e => setVincForm(f => ({ ...f, modalidades: { ...f.modalidades, CLIENTE_COMERCIAL: { ...f.modalidades.CLIENTE_COMERCIAL, selected: e.target.checked } } }))} className="w-4 h-4 accent-primary-600" />
-                <div className="flex-1 text-sm font-medium text-gray-800">ðŸ’³ Cliente Comercial (B2C)</div>
+                <div className="flex-1 text-sm font-medium text-gray-800">💳 Cliente Comercial (B2C)</div>
                 {vincForm.modalidades.CLIENTE_COMERCIAL.selected && (
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500 text-sm">$</span>
@@ -756,7 +756,7 @@ const EmpresaDetalle: React.FC = () => {
 
               <div className="p-3 border border-blue-200 rounded-lg flex items-center gap-4 bg-blue-50">
                 <input type="checkbox" checked={vincForm.modalidades.EMPLEADO_NOMINA.selected} onChange={e => setVincForm(f => ({ ...f, modalidades: { ...f.modalidades, EMPLEADO_NOMINA: { ...f.modalidades.EMPLEADO_NOMINA, selected: e.target.checked } } }))} className="w-4 h-4 accent-blue-600" />
-                <div className="flex-1 text-sm font-medium text-blue-900">ðŸ’¼ CrÃ©dito de NÃ³mina (B2B)</div>
+                <div className="flex-1 text-sm font-medium text-blue-900">💼 Crédito de Nómina (B2B)</div>
                 {vincForm.modalidades.EMPLEADO_NOMINA.selected && (
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500 text-sm">$</span>
@@ -767,7 +767,7 @@ const EmpresaDetalle: React.FC = () => {
 
               <div className="p-3 border border-amber-200 rounded-lg flex items-center gap-4 bg-amber-50">
                 <input type="checkbox" checked={vincForm.modalidades.EMPLEADO_VIATICOS.selected} onChange={e => setVincForm(f => ({ ...f, modalidades: { ...f.modalidades, EMPLEADO_VIATICOS: { ...f.modalidades.EMPLEADO_VIATICOS, selected: e.target.checked } } }))} className="w-4 h-4 accent-amber-600" />
-                <div className="flex-1 text-sm font-medium text-amber-900">ðŸ¢ Tarjeta Corporativa / ViÃ¡ticos (B2B)</div>
+                <div className="flex-1 text-sm font-medium text-amber-900">🏢 Tarjeta Corporativa / Viáticos (B2B)</div>
                 {vincForm.modalidades.EMPLEADO_VIATICOS.selected && (
                   <div className="flex items-center gap-2">
                     <span className="text-gray-500 text-sm">$</span>
@@ -801,7 +801,7 @@ const EmpresaDetalle: React.FC = () => {
         onClose={() => setDeleteVinc(null)}
         onConfirm={handleDesvincular}
         loading={deletingVinc}
-        message="Â¿Desvincular este cliente de la empresa? Se registrarÃ¡ como inactivo."
+        message="¿Desvincular este cliente de la empresa? Se registrará como inactivo."
       />
     </div>
   );

@@ -25,7 +25,7 @@ interface CuentaConfig {
 }
 
 const genAccountNumber = () => '1000' + String(Date.now()).slice(-12).padStart(12, '0');
-// CLABE = 3 banco (014) + 3 ciudad (180) + 11 cuenta + 1 control = 18 dÃ­gitos
+// CLABE = 3 banco (014) + 3 ciudad (180) + 11 cuenta + 1 control = 18 dígitos
 const genCLABE = (acc: string) => '014180' + acc.slice(-11).padStart(11, '0') + '7';
 
 const TIPO_ICONS: Record<TipoCuenta, React.FC<any>> = {
@@ -33,8 +33,8 @@ const TIPO_ICONS: Record<TipoCuenta, React.FC<any>> = {
 };
 const TIPO_DESC: Record<TipoCuenta, string> = {
   AHORRO: 'Genera rendimientos. Ideal para ahorro personal.',
-  CHEQUES: 'EmisiÃ³n de cheques y altos volÃºmenes.',
-  NOMINA: 'Cuenta transaccional con tarjeta de dÃ©bito.',
+  CHEQUES: 'Emisión de cheques y altos volúmenes.',
+  NOMINA: 'Cuenta transaccional con tarjeta de débito.',
   INVERSION: 'Instrumentos financieros con mayor rendimiento.',
 };
 
@@ -130,7 +130,7 @@ const AperturaCuenta: React.FC = () => {
   const validateStep2 = () => {
     const e: Record<string, string> = {};
     if (!config.tipo_cuenta) e.tipo = 'Selecciona un tipo de cuenta';
-    if (config.saldo < 0) e.deposito = 'El depÃ³sito no puede ser negativo';
+    if (config.saldo < 0) e.deposito = 'El depósito no puede ser negativo';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -162,7 +162,7 @@ const AperturaCuenta: React.FC = () => {
       const serverMsg: string = e?.response?.data?.message ?? e?.message ?? 'Error al aperturar la cuenta';
       let msg = serverMsg;
       if (serverErr.includes('UNIQUE') || serverErr.includes('duplicate') || serverErr === 'Validation error') {
-        msg = 'Ya existe una cuenta con ese nÃºmero o CLABE. Intenta de nuevo.';
+        msg = 'Ya existe una cuenta con ese número o CLABE. Intenta de nuevo.';
       } else if (serverErr.includes('truncated') || serverErr.includes('Truncated')) {
         msg = `${serverMsg}: un campo excede la longitud permitida.`;
       } else if (serverErr) {
@@ -238,7 +238,7 @@ const AperturaCuenta: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 text-sm">{nombreCliente(c)}</p>
-                      <p className="text-xs text-gray-500 font-mono">{c.rfc} Â· {c.curp}</p>
+                      <p className="text-xs text-gray-500 font-mono">{c.rfc} · {c.curp}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="text-xs text-gray-400">{cuentasCliente.length} cuentas</span>
@@ -256,7 +256,7 @@ const AperturaCuenta: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-bold text-primary-900">{nombreCliente(cliente)}</p>
-                      <p className="text-xs text-primary-600">{cuentasCliente.length} cuenta(s) Â· Nivel {cliente.nivel_cuenta_id}</p>
+                      <p className="text-xs text-primary-600">{cuentasCliente.length} cuenta(s) · Nivel {cliente.nivel_cuenta_id}</p>
                     </div>
                   </div>
                   <CheckCircle2 className="text-primary-600" size={22} />
@@ -345,7 +345,7 @@ const AperturaCuenta: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label-field">DepÃ³sito Inicial</label>
+                  <label className="label-field">Depósito Inicial</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
                     <input
@@ -393,7 +393,7 @@ const AperturaCuenta: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <label className="label-field">Tasa de CrÃ©dito (%)</label>
+                      <label className="label-field">Tasa de Crédito (%)</label>
                       <div className="relative">
                         <input
                           type="number"
@@ -422,12 +422,12 @@ const AperturaCuenta: React.FC = () => {
             </div>
           )}
 
-          {/* PASO 3: ConfirmaciÃ³n */}
+          {/* PASO 3: Confirmación */}
           {step === 3 && (
             <div className="space-y-5">
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
-                <span className="text-amber-600 text-lg">âš ï¸</span>
-                <p className="text-sm text-amber-800">Revisa los datos antes de aperturar. Una vez creada la cuenta, el nÃºmero y CLABE no podrÃ¡n cambiarse.</p>
+                <span className="text-amber-600 text-lg">⚠️</span>
+                <p className="text-sm text-amber-800">Revisa los datos antes de aperturar. Una vez creada la cuenta, el número y CLABE no podrán cambiarse.</p>
               </div>
 
               <div className="border border-gray-100 rounded-xl overflow-hidden">
@@ -440,23 +440,23 @@ const AperturaCuenta: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-bold text-gray-900">{nombreCliente(cliente!)}</p>
-                    <p className="text-xs text-gray-500 font-mono">{cliente!.rfc} Â· {cliente!.curp}</p>
+                    <p className="text-xs text-gray-500 font-mono">{cliente!.rfc} · {cliente!.curp}</p>
                   </div>
                 </div>
               </div>
 
               <div className="border border-gray-100 rounded-xl overflow-hidden">
                 <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">ConfiguraciÃ³n</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Configuración</p>
                 </div>
                 <div className="divide-y divide-gray-50">
                   {[
                     ['Tipo de cuenta', config.tipo_cuenta],
                     ['Moneda', config.moneda],
                     ['Nivel', nivelActual?.nombre ?? `#${config.nivel_cuenta_id}`],
-                    ['DepÃ³sito inicial', fmtMoney(config.saldo, config.moneda)],
-                    ...(config.limite_credito > 0 ? [['LÃ­mite de crÃ©dito', fmtMoney(config.limite_credito, config.moneda)]] : []),
-                    ...(config.tasa_credito > 0 ? [['Tasa de crÃ©dito', `${config.tasa_credito}%`]] : []),
+                    ['Depósito inicial', fmtMoney(config.saldo, config.moneda)],
+                    ...(config.limite_credito > 0 ? [['Límite de crédito', fmtMoney(config.limite_credito, config.moneda)]] : []),
+                    ...(config.tasa_credito > 0 ? [['Tasa de crédito', `${config.tasa_credito}%`]] : []),
                   ].map(([k, v]) => (
                     <div key={k} className="flex justify-between px-4 py-2.5 text-sm">
                       <span className="text-gray-500">{k}</span>
@@ -483,14 +483,14 @@ const AperturaCuenta: React.FC = () => {
         </div>
       )}
 
-      {/* PASO 4: Ã‰xito */}
+      {/* PASO 4: Éxito */}
       {step === 4 && result && (
         <div className="card overflow-hidden">
           <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 px-6 py-8 text-center">
             <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
               <CheckCircle2 size={36} className="text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white">Â¡Cuenta Aperturada!</h2>
+            <h2 className="text-2xl font-bold text-white">¡Cuenta Aperturada!</h2>
             <p className="text-emerald-100 mt-1 text-sm">La cuenta ha sido creada exitosamente en el sistema</p>
             <p className="text-emerald-200 text-xs mt-1">Folio: {result.folio}</p>
           </div>
@@ -500,7 +500,7 @@ const AperturaCuenta: React.FC = () => {
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4" />
               <div className="relative">
                 <p className="text-primary-300 text-xs font-semibold uppercase tracking-widest mb-1">Banco Unecre</p>
-                <p className="text-white/60 text-xs mb-4">{config.tipo_cuenta} Â· {config.moneda}</p>
+                <p className="text-white/60 text-xs mb-4">{config.tipo_cuenta} · {config.moneda}</p>
                 <p className="text-2xl font-bold tracking-widest font-mono mb-1">
                   {result.numero.match(/.{4}/g)?.join(' ')}
                 </p>
@@ -519,7 +519,7 @@ const AperturaCuenta: React.FC = () => {
             </div>
 
             {[
-              { label: 'NÃºmero de Cuenta', value: result.numero, key: 'numero' },
+              { label: 'Número de Cuenta', value: result.numero, key: 'numero' },
               { label: 'CLABE Interbancaria', value: result.clabe, key: 'clabe' },
             ].map(item => (
               <div key={item.key} className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
