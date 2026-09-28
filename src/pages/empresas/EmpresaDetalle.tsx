@@ -141,7 +141,16 @@ const EmpresaDetalle: React.FC = () => {
     try {
       const res = await empresaClientesService.getByEmpresa(empresaId);
       const raw = res.data as any;
-      const items: EmpresaCliente[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
+      const lista: any[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
+      // El API manda el cliente y la cuenta anidados (include de Sequelize); la tabla usa campos planos.
+      const items: EmpresaCliente[] = lista.map(v => ({
+        ...v,
+        cliente_nombre: v.cliente_nombre ?? ([v.cliente?.nombre, v.cliente?.apellido_paterno, v.cliente?.apellido_materno].filter(Boolean).join(' ').trim() || undefined),
+        cliente_rfc: v.cliente_rfc ?? v.cliente?.rfc ?? undefined,
+        cuenta_numero: v.cuenta_numero ?? v.cuenta?.numero_cuenta ?? undefined,
+        cuenta_tipo: v.cuenta_tipo ?? v.cuenta?.tipo_cuenta ?? undefined,
+        cuenta_saldo: v.cuenta_saldo ?? v.cuenta?.saldo ?? undefined,
+      }));
       setVinculaciones(items);
     } catch {
       /* ignore */
