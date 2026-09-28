@@ -13,6 +13,8 @@ import { empresasService } from '../../services/empresasService';
 import { empresaClientesService } from '../../services/empresaClientesService';
 import { clientesService } from '../../services/clientesService';
 import { cuentasService } from '../../services/cuentasService';
+import api from '../../services/api';
+import AvisoGuardarDialog from '../../components/common/AvisoGuardarDialog';
 
 type Tab = 'datos' | 'clientes' | 'comercios' | 'info';
 
@@ -94,6 +96,8 @@ const EmpresaDetalle: React.FC = () => {
 
   const [loadingVinc, setLoadingVinc] = useState(false);
   const [vincularOpen, setVincularOpen] = useState(false);
+  const [descargandoNomina, setDescargandoNomina] = useState(false);
+  const [errorNomina, setErrorNomina] = useState<string | null>(null);
   const [deleteVinc, setDeleteVinc] = useState<EmpresaCliente | null>(null);
   const [deletingVinc, setDeletingVinc] = useState(false);
   const [clienteSearch, setClienteSearch] = useState('');
@@ -314,18 +318,27 @@ const EmpresaDetalle: React.FC = () => {
 
   
     const descargarNomina = async () => {
+      setDescargandoNomina(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`https://bancaunecre.com/api/empresas/${empresaId}/reporte-nomina`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
+        // Usa el cliente api (manda el token de la sesión); antes leía localStorage 'token', que no existe → 401.
+        const res = await api.get(`/empresas/${empresaId}/reporte-nomina`, { responseType: 'blob' });
+        const blob = res.data as Blob;
+        if (blob.type.includes('json')) throw new Error(JSON.parse(await blob.text())?.message || 'El servidor no devolvió el CSV');
+        const cd = String(res.headers['content-disposition'] ?? '');
+        const nombre = /filename="?([^";]+)"?/i.exec(cd)?.[1] ?? `nomina_empresa_${empresaId}.csv`;
+        const url = window.URL.createObjectURL(new Blob([blob], { type: 'text/csv;charset=utf-8' }));
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `nomina_empresa_${empresaId}.csv`;
-        a.click();
-      } catch(e) { alert("Error descargando reporte"); }
+        a.href = url; a.download = nombre;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+      } catch (e: any) {
+        let motivo = e?.message ?? 'Error desconocido';
+        const d = e?.response?.data;
+        if (d instanceof Blob) { try { motivo = JSON.parse(await d.text())?.message ?? motivo; } catch { /* no json */ } }
+        setErrorNomina(motivo);
+      } finally {
+        setDescargandoNomina(false);
+      }
     };
 
     const handleDesvincular = async () => {
@@ -643,8 +656,14 @@ const EmpresaDetalle: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-gray-800">Clientes y Cuentas Vinculadas</h3>
                 <div className="flex gap-2">
-                  <button onClick={descargarNomina} className="btn-secondary text-sm">
-                    <Download size={15} className="mr-1 inline" /> Reporte Nómina
+                  <button
+                    onClick={descargarNomina}
+                    disabled={descargandoNomina}
+                    className="btn-secondary px-3"
+                    title="Descargar reporte de nómina (CSV)"
+                    aria-label="Descargar reporte de nómina (CSV)"
+                  >
+                    {descargandoNomina ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                   </button>
                   <button onClick={openVincular} className="btn-primary">
                     <Plus size={15} />Vincular Cliente
@@ -680,6 +699,13 @@ const EmpresaDetalle: React.FC = () => {
       </div>
 
       {/* Modal: Vincular cliente */}
+      <AvisoGuardarDialog
+        isOpen={!!errorNomina}
+        onClose={() => setErrorNomina(null)}
+        titulo="No se pudo descargar el reporte"
+        descripcion="El reporte de nómina (CSV) no se generó:"
+        problemas={[{ campo: 'Servidor', motivo: errorNomina ?? '' }]}
+      />
       <Modal isOpen={vincularOpen} onClose={() => setVincularOpen(false)} title="Vincular Cliente a la Empresa" size="lg">
         <div className="space-y-4">
           <div>
