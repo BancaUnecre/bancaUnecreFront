@@ -9,6 +9,7 @@ import { tipoIdentificacionService } from '../../services/tipoIdentificacionServ
 import { ocupacionesService } from '../../services/ocupacionesService';
 import { nivelCuentaService } from '../../services/nivelCuentaService';
 import { nivelRiesgoService } from '../../services/nivelRiesgoService';
+import AvisoGuardarDialog, { type ProblemaGuardado } from '../../components/common/AvisoGuardarDialog';
 
 type Tab = 'personal' | 'domicilio' | 'contacto' | 'laboral' | 'kyc' | 'terminos';
 
@@ -21,6 +22,36 @@ const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number }> }[] = [
   { id: 'terminos', label: 'Términos', icon: FileText },
 ];
 
+/** Etiqueta de campo requerido: el * se pone en rojo cuando el campo tiene un problema. */
+const Etq: React.FC<{ err?: unknown; children: React.ReactNode }> = ({ err, children }) => (
+  <label className="label-field">
+    {children}{' '}
+    <span className={err ? 'text-red-600 font-extrabold text-base leading-none' : ''}>*</span>
+  </label>
+);
+
+const CAMPO_LABELS: Record<string, string> = {
+  nombre: 'Nombre', apellido_paterno: 'Apellido Paterno', fecha_nacimiento: 'Fecha de Nacimiento',
+  genero: 'Género', curp: 'CURP', rfc: 'RFC', tipo_identificacion_id: 'Tipo de Identificación',
+  num_identificacion: 'Número de Identificación', vigencia_identificacion: 'Vigencia Identificación',
+  calle: 'Calle', num_exterior: 'Núm. Exterior', colonia: 'Colonia', municipio: 'Municipio/Alcaldía',
+  estado_id: 'Estado', cp: 'Código Postal', telefono_celular: 'Teléfono Celular', email: 'Correo Electrónico',
+  ocupacion_id: 'Ocupación', ingreso_mensual: 'Ingreso Mensual', origen_recursos: 'Origen de Recursos',
+  nivel_cuenta_id: 'Nivel de Cuenta', nivel_riesgo_id: 'Nivel de Riesgo', descripcion_pep: 'Descripción PEP',
+  acepta_terminos: 'Términos y Condiciones', acepta_uso_datos: 'Uso de datos personales', tipo_domicilio: 'Tipo de Domicilio',
+};
+
+const hoyISO = () => new Date().toISOString().slice(0, 10);
+/** Valida una fecha yyyy-mm-dd de input date (el navegador deja capturar años de 5 dígitos). */
+const fechaValida = (v: unknown) => {
+  const t = String(v ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return false;
+  const d = new Date(t + 'T00:00:00');
+  return !isNaN(d.getTime()) && d.getFullYear() >= 1900;
+};
+const RX_CURP = /^[A-Z][AEIOUX][A-Z]{2}\d{6}[HMX][A-Z]{5}[0-9A-Z]\d$/i;
+const RX_RFC = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/i;
+
 const ClienteForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -30,6 +61,7 @@ const ClienteForm: React.FC = () => {
   const [loadingCats, setLoadingCats] = useState(true);
   const [loadingCliente, setLoadingCliente] = useState(isEdit);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<{ titulo?: string; descripcion?: string; problemas: ProblemaGuardado[] } | null>(null);
 
   const [estados, setEstados] = useState<Estado[]>([]);
   const [tiposId, setTiposId] = useState<TipoIdentificacion[]>([]);
@@ -113,6 +145,8 @@ const ClienteForm: React.FC = () => {
     municipio: 'domicilio', estado_id: 'domicilio', cp: 'domicilio',
     telefono_celular: 'contacto', email: 'contacto',
     ocupacion_id: 'laboral', ingreso_mensual: 'laboral', origen_recursos: 'laboral',
+    nivel_cuenta_id: 'laboral', nivel_riesgo_id: 'laboral', descripcion_pep: 'kyc',
+    acepta_terminos: 'terminos', acepta_uso_datos: 'terminos', tipo_domicilio: 'domicilio',
   };
 
   const TAB_LABELS: Record<Tab, string> = {
@@ -120,16 +154,49 @@ const ClienteForm: React.FC = () => {
     contacto: 'Contacto', laboral: 'Info. Laboral', kyc: 'KYC / PEP', terminos: 'Términos',
   };
 
+  const tabOrder: Tab[] = ['personal', 'domicilio', 'contacto', 'laboral', 'kyc', 'terminos'];
+  const tabDeLabel = (label: string) => tabOrder.find(t => TAB_LABELS[t] === label);
+
   const onError = (errs: FieldErrors<Cliente>) => {
-    const tabOrder: Tab[] = ['personal', 'domicilio', 'contacto', 'laboral', 'kyc', 'terminos'];
-    const tabsConError = tabOrder.filter(tab =>
-      (Object.keys(errs) as (keyof Cliente)[]).some(f => FIELD_TABS[f] === tab)
-    );
-    if (tabsConError.length > 0) {
-      setActiveTab(tabsConError[0]);
-      const nombres = tabsConError.map(t => TAB_LABELS[t]).join(', ');
-      setApiError(`Faltan campos requeridos en: ${nombres}. Completa los campos marcados en rojo.`);
+    const campos = (Object.keys(errs) as (keyof Cliente)[])
+      .sort((x, y) => tabOrder.indexOf(FIELD_TABS[x] ?? 'personal') - tabOrder.indexOf(FIELD_TABS[y] ?? 'personal'));
+    if (!campos.length) return;
+    setActiveTab(FIELD_TABS[campos[0]] ?? 'personal');
+    setApiError(null);
+    setAviso({
+      descripcion: `Hay ${campos.length} campo(s) con problema. Los campos marcados tienen el * en rojo.`,
+      problemas: campos.map(f => {
+        const m = (errs[f] as { message?: string } | undefined)?.message;
+        return {
+          seccion: TAB_LABELS[FIELD_TABS[f] ?? 'personal'],
+          campo: CAMPO_LABELS[f as string] ?? String(f),
+          motivo: m && m !== 'Campo requerido' ? m : 'Falta capturarlo (es obligatorio).',
+        };
+      }),
+    });
+  };
+
+  /** Si el API rechazó por duplicado, averigua qué dato (CURP / RFC) ya pertenece a otro cliente. */
+  const buscarDuplicados = async (data: Cliente): Promise<ProblemaGuardado[]> => {
+    const out: ProblemaGuardado[] = [];
+    for (const [campo, valor] of [['curp', data.curp], ['rfc', data.rfc]] as const) {
+      const v = String(valor ?? '').trim().toUpperCase();
+      if (!v) continue;
+      try {
+        const r = await clientesService.getAll({ buscar: v, limit: 20 });
+        const raw = r.data as any;
+        const lista: any[] = Array.isArray(raw) ? raw : (raw?.data ?? []);
+        const otro = lista.find(c => String(c[campo] ?? '').trim().toUpperCase() === v && String(c.id) !== String(id ?? ''));
+        if (otro) {
+          const nombre = [otro.nombre, otro.apellido_paterno, otro.apellido_materno].filter(Boolean).join(' ');
+          out.push({
+            seccion: TAB_LABELS.personal, campo: CAMPO_LABELS[campo],
+            motivo: `${v} ya está registrado al cliente #${otro.id} ${nombre}. No puede repetirse.`,
+          });
+        }
+      } catch { /* sin detalle: se cae al mensaje genérico */ }
     }
+    return out;
   };
 
   const sanitize = (data: Record<string, unknown>) =>
@@ -153,34 +220,37 @@ const ClienteForm: React.FC = () => {
       navigate('/clientes');
     } catch (e: any) {
       const serverErr: string = e?.response?.data?.error ?? '';
-      let msg: string;
+      let problemas: ProblemaGuardado[] = [];
       if (serverErr.includes('notNull Violation')) {
-        const CAMPO_LABELS: Record<string, string> = {
-          calle: 'Calle', num_exterior: 'Núm. Exterior', colonia: 'Colonia',
-          municipio: 'Municipio', estado_id: 'Estado', cp: 'Código Postal',
-          telefono_celular: 'Teléfono Celular', email: 'Correo Electrónico',
-          ocupacion_id: 'Ocupación', ingreso_mensual: 'Ingreso Mensual',
-          origen_recursos: 'Origen de Recursos', nombre: 'Nombre',
-          apellido_paterno: 'Apellido Paterno', curp: 'CURP', rfc: 'RFC',
-          tipo_identificacion_id: 'Tipo de Identificación',
-          num_identificacion: 'Núm. de Identificación',
-          vigencia_identificacion: 'Vigencia Identificación',
-          genero: 'Género', fecha_nacimiento: 'Fecha de Nacimiento',
-        };
         const matches = serverErr.match(/Clientes\.(\w+) cannot be null/g) ?? [];
-        const campos = matches.map(m => {
-          const field = m.replace('Clientes.', '').replace(' cannot be null', '');
-          return CAMPO_LABELS[field] ?? field;
+        problemas = matches.map(m => {
+          const f = m.replace('Clientes.', '').replace(' cannot be null', '');
+          return { seccion: TAB_LABELS[FIELD_TABS[f as keyof Cliente] ?? 'personal'], campo: CAMPO_LABELS[f] ?? f, motivo: 'Falta capturarlo (es obligatorio).' };
         });
-        msg = `Faltan campos requeridos: ${campos.join(', ')}.`;
       } else if (serverErr.includes('CHECK constraint')) {
-        msg = 'Valor no permitido en algún campo. Revisa los datos ingresados.';
+        const CHECKS: [RegExp, string, string][] = [
+          [/chk_curp_formato/, 'curp', 'Debe tener exactamente 18 caracteres.'],
+          [/chk_cp_formato/, 'cp', 'Debe tener exactamente 5 dígitos.'],
+          [/chk_ingresos/, 'ingreso_mensual', 'No puede ser negativo.'],
+          [/chk_pep_desc/, 'descripcion_pep', 'Si el cliente es PEP hay que describir el cargo.'],
+          [/genero/, 'genero', 'Selecciona Masculino o Femenino.'],
+          [/tipo_d/, 'tipo_domicilio', 'Valor no permitido.'],
+        ];
+        problemas = CHECKS.filter(([rx]) => rx.test(serverErr))
+          .map(([, f, motivo]) => ({ seccion: TAB_LABELS[FIELD_TABS[f as keyof Cliente] ?? 'personal'], campo: CAMPO_LABELS[f] ?? f, motivo }));
+        if (!problemas.length) problemas = [{ campo: 'Datos', motivo: 'Algún campo tiene un valor no permitido. Detalle del servidor: ' + serverErr }];
       } else if (serverErr.includes('UNIQUE') || serverErr.includes('duplicate') || serverErr === 'Validation error') {
-        msg = 'Ya existe un cliente con esos datos (CURP, RFC o correo electrónico duplicado).';
+        problemas = await buscarDuplicados(data);
+        if (!problemas.length) problemas = [{ seccion: TAB_LABELS.personal, campo: 'CURP / RFC / correo', motivo: 'Ya existe otro cliente con alguno de estos datos; no pueden repetirse.' }];
+      } else if (/invalid date/i.test(serverErr)) {
+        problemas = [{ seccion: TAB_LABELS.personal, campo: 'Fechas', motivo: 'Alguna fecha no es válida (revisa Fecha de Nacimiento y Vigencia).' }];
       } else {
-        msg = e?.response?.data?.message ?? e?.message ?? 'Error al guardar';
+        problemas = [{ campo: e?.response?.data?.message ?? 'Error', motivo: serverErr || e?.message || 'El servidor no pudo guardar el cliente.' }];
       }
-      setApiError(msg);
+      const primera = problemas.find(p => p.seccion)?.seccion;
+      if (primera) setActiveTab(tabDeLabel(primera) ?? activeTab);
+      setApiError(null);
+      setAviso({ titulo: 'El servidor rechazó el registro', descripcion: 'No se guardó el cliente por lo siguiente:', problemas });
       setSaving(false);
     }
   };
@@ -217,6 +287,15 @@ const ClienteForm: React.FC = () => {
         </div>
       )}
 
+      <AvisoGuardarDialog
+        isOpen={!!aviso}
+        onClose={() => setAviso(null)}
+        titulo={aviso?.titulo}
+        descripcion={aviso?.descripcion}
+        problemas={aviso?.problemas ?? []}
+        onIrASeccion={(sec) => { const t = tabDeLabel(sec); if (t) setActiveTab(t); }}
+      />
+
       <div className="card overflow-hidden">
         <div className="flex overflow-x-auto border-b border-gray-100">
           {TABS.map(tab => (
@@ -230,6 +309,9 @@ const ClienteForm: React.FC = () => {
               }`}
             >
               <tab.icon size={15} />{tab.label}
+              {(Object.keys(errors) as (keyof Cliente)[]).some(f => FIELD_TABS[f] === tab.id) && (
+                <span className="ml-1 h-2 w-2 rounded-full bg-red-500" title="Hay campos con problema" />
+              )}
             </button>
           ))}
         </div>
@@ -241,12 +323,12 @@ const ClienteForm: React.FC = () => {
             {activeTab === 'personal' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <label className="label-field">Nombre *</label>
+                  <Etq err={errors.nombre}>Nombre</Etq>
                   <input {...register('nombre', { required: 'Campo requerido' })} className={inputClass(errors.nombre)} placeholder="Nombre(s)" />
                   {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre.message}</p>}
                 </div>
                 <div>
-                  <label className="label-field">Apellido Paterno *</label>
+                  <Etq err={errors.apellido_paterno}>Apellido Paterno</Etq>
                   <input {...register('apellido_paterno', { required: 'Campo requerido' })} className={inputClass(errors.apellido_paterno)} placeholder="Apellido paterno" />
                   {errors.apellido_paterno && <p className="text-red-500 text-xs mt-1">{errors.apellido_paterno.message}</p>}
                 </div>
@@ -255,12 +337,12 @@ const ClienteForm: React.FC = () => {
                   <input {...register('apellido_materno')} className="input-field" placeholder="Apellido materno" />
                 </div>
                 <div>
-                  <label className="label-field">Fecha de Nacimiento *</label>
-                  <input type="date" {...register('fecha_nacimiento', { required: 'Campo requerido' })} className={inputClass(errors.fecha_nacimiento)} />
+                  <Etq err={errors.fecha_nacimiento}>Fecha de Nacimiento</Etq>
+                  <input type="date" {...register('fecha_nacimiento', { required: 'Campo requerido', validate: v => (fechaValida(v) ? (String(v) <= hoyISO() || 'No puede ser una fecha futura.') : 'Fecha inválida: revisa el año (debe tener 4 dígitos).') })} className={inputClass(errors.fecha_nacimiento)} />
                   {errors.fecha_nacimiento && <p className="text-red-500 text-xs mt-1">{errors.fecha_nacimiento.message}</p>}
                 </div>
                 <div>
-                  <label className="label-field">Género *</label>
+                  <Etq err={errors.genero}>Género</Etq>
                   <select {...register('genero', { required: 'Campo requerido' })} className={inputClass(errors.genero)}>
                     <option value="">Seleccionar</option>
                     <option value="M">Masculino</option>
@@ -287,9 +369,9 @@ const ClienteForm: React.FC = () => {
                   <h3 className="font-semibold text-gray-700 mb-3">Identificación</h3>
                 </div>
                 <div>
-                  <label className="label-field">CURP *</label>
+                  <Etq err={errors.curp}>CURP</Etq>
                   <input
-                    {...register('curp', { required: 'Campo requerido', minLength: { value: 18, message: 'CURP debe tener 18 caracteres' }, maxLength: { value: 18, message: 'CURP debe tener 18 caracteres' } })}
+                    {...register('curp', { required: 'Campo requerido', minLength: { value: 18, message: 'CURP debe tener 18 caracteres' }, maxLength: { value: 18, message: 'CURP debe tener 18 caracteres' }, pattern: { value: RX_CURP, message: 'Formato de CURP inválido.' } })}
                     className={inputClass(errors.curp)}
                     placeholder="18 caracteres"
                     maxLength={18}
@@ -298,24 +380,26 @@ const ClienteForm: React.FC = () => {
                   {errors.curp && <p className="text-red-500 text-xs mt-1">{errors.curp.message}</p>}
                 </div>
                 <div>
-                  <label className="label-field">RFC *</label>
-                  <input {...register('rfc', { required: 'Campo requerido' })} className={inputClass(errors.rfc)} placeholder="12 o 13 caracteres" maxLength={13} style={{ textTransform: 'uppercase' }} />
+                  <Etq err={errors.rfc}>RFC</Etq>
+                  <input {...register('rfc', { required: 'Campo requerido', pattern: { value: RX_RFC, message: 'Formato de RFC inválido (12 o 13 caracteres).' } })} className={inputClass(errors.rfc)} placeholder="12 o 13 caracteres" maxLength={13} style={{ textTransform: 'uppercase' }} />
                   {errors.rfc && <p className="text-red-500 text-xs mt-1">{errors.rfc.message}</p>}
                 </div>
                 <div>
-                  <label className="label-field">Tipo de Identificación *</label>
+                  <Etq err={errors.tipo_identificacion_id}>Tipo de Identificación</Etq>
                   <select {...register('tipo_identificacion_id', { required: 'Campo requerido', valueAsNumber: true, validate: v => !isNaN(v) || 'Campo requerido' })} className={inputClass(errors.tipo_identificacion_id)}>
                     <option value="">Seleccionar</option>
                     {tiposId.map(t => <option key={t.id} value={t.id}>{t.descripcion}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label-field">Número de Identificación *</label>
+                  <Etq err={errors.num_identificacion}>Número de Identificación</Etq>
                   <input {...register('num_identificacion', { required: 'Campo requerido' })} className={inputClass(errors.num_identificacion)} placeholder="Número de doc." />
+                  {errors.num_identificacion && <p className="text-red-500 text-xs mt-1">{errors.num_identificacion.message}</p>}
                 </div>
                 <div>
-                  <label className="label-field">Vigencia Identificación *</label>
-                  <input type="date" {...register('vigencia_identificacion', { required: 'Campo requerido' })} className={inputClass(errors.vigencia_identificacion)} />
+                  <Etq err={errors.vigencia_identificacion}>Vigencia Identificación</Etq>
+                  <input type="date" {...register('vigencia_identificacion', { required: 'Campo requerido', validate: v => (fechaValida(v) ? (String(v) >= hoyISO() || 'La identificación está vencida.') : 'Fecha inválida: revisa el año (debe tener 4 dígitos).') })} className={inputClass(errors.vigencia_identificacion)} />
+                  {errors.vigencia_identificacion && <p className="text-red-500 text-xs mt-1">{errors.vigencia_identificacion.message}</p>}
                 </div>
                 <div>
                   <label className="label-field">Clave de Elector</label>
@@ -340,11 +424,11 @@ const ClienteForm: React.FC = () => {
             {activeTab === 'domicilio' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="md:col-span-2">
-                  <label className="label-field">Calle *</label>
+                  <Etq err={errors.calle}>Calle</Etq>
                   <input {...register('calle', { required: 'Campo requerido' })} className={inputClass(errors.calle)} placeholder="Nombre de la calle" />
                 </div>
                 <div>
-                  <label className="label-field">Núm. Exterior *</label>
+                  <Etq err={errors.num_exterior}>Núm. Exterior</Etq>
                   <input {...register('num_exterior', { required: 'Campo requerido' })} className={inputClass(errors.num_exterior)} placeholder="123" />
                 </div>
                 <div>
@@ -352,22 +436,22 @@ const ClienteForm: React.FC = () => {
                   <input {...register('num_interior')} className="input-field" placeholder="A, 2B, etc." />
                 </div>
                 <div>
-                  <label className="label-field">Colonia *</label>
+                  <Etq err={errors.colonia}>Colonia</Etq>
                   <input {...register('colonia', { required: 'Campo requerido' })} className={inputClass(errors.colonia)} placeholder="Colonia" />
                 </div>
                 <div>
-                  <label className="label-field">Municipio/Alcaldía *</label>
+                  <Etq err={errors.municipio}>Municipio/Alcaldía</Etq>
                   <input {...register('municipio', { required: 'Campo requerido' })} className={inputClass(errors.municipio)} placeholder="Municipio" />
                 </div>
                 <div>
-                  <label className="label-field">Estado *</label>
+                  <Etq err={errors.estado_id}>Estado</Etq>
                   <select {...register('estado_id', { required: 'Campo requerido', valueAsNumber: true, validate: v => !isNaN(v) || 'Campo requerido' })} className={inputClass(errors.estado_id)}>
                     <option value="">Seleccionar</option>
                     {estados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label-field">Código Postal *</label>
+                  <Etq err={errors.cp}>Código Postal</Etq>
                   <input
                     {...register('cp', { required: 'Campo requerido', minLength: { value: 5, message: 'CP de 5 dígitos' }, maxLength: 5 })}
                     className={inputClass(errors.cp)}
@@ -400,7 +484,7 @@ const ClienteForm: React.FC = () => {
             {activeTab === 'contacto' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="label-field">Teléfono Celular *</label>
+                  <Etq err={errors.telefono_celular}>Teléfono Celular</Etq>
                   <input {...register('telefono_celular', { required: 'Campo requerido' })} className={inputClass(errors.telefono_celular)} placeholder="10 dígitos" maxLength={15} />
                 </div>
                 <div>
@@ -412,7 +496,7 @@ const ClienteForm: React.FC = () => {
                   <input {...register('telefono_trabajo')} className="input-field" placeholder="10 dígitos" maxLength={15} />
                 </div>
                 <div>
-                  <label className="label-field">Correo Electrónico *</label>
+                  <Etq err={errors.email}>Correo Electrónico</Etq>
                   <input
                     type="email"
                     {...register('email', {
@@ -431,7 +515,7 @@ const ClienteForm: React.FC = () => {
             {activeTab === 'laboral' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="label-field">Ocupación *</label>
+                  <Etq err={errors.ocupacion_id}>Ocupación</Etq>
                   <select {...register('ocupacion_id', { required: 'Campo requerido', valueAsNumber: true, validate: v => !isNaN(v) || 'Campo requerido' })} className={inputClass(errors.ocupacion_id)}>
                     <option value="">Seleccionar</option>
                     {ocupaciones.map(o => <option key={o.id} value={o.id}>{o.descripcion}</option>)}
@@ -446,7 +530,7 @@ const ClienteForm: React.FC = () => {
                   <input {...register('giro_negocio')} className="input-field" placeholder="Tipo de negocio" />
                 </div>
                 <div>
-                  <label className="label-field">Ingreso Mensual *</label>
+                  <Etq err={errors.ingreso_mensual}>Ingreso Mensual</Etq>
                   <input
                     type="number"
                     step="0.01"
@@ -461,7 +545,7 @@ const ClienteForm: React.FC = () => {
                   <input type="number" step="0.01" {...register('otros_ingresos', { valueAsNumber: true })} className="input-field" placeholder="0.00" />
                 </div>
                 <div>
-                  <label className="label-field">Origen de Recursos *</label>
+                  <Etq err={errors.origen_recursos}>Origen de Recursos</Etq>
                   <select {...register('origen_recursos', { required: 'Campo requerido' })} className={inputClass(errors.origen_recursos)}>
                     <option value="">Seleccionar</option>
                     <option value="SALARIO">Salario</option>
@@ -473,13 +557,13 @@ const ClienteForm: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="label-field">Nivel de Cuenta *</label>
+                  <Etq err={errors.nivel_cuenta_id}>Nivel de Cuenta</Etq>
                   <select {...register('nivel_cuenta_id', { required: true, valueAsNumber: true })} className="input-field">
                     {nivelesCuenta.map(n => <option key={n.id} value={n.id}>{n.nombre} — {n.limite_deposito}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label-field">Nivel de Riesgo *</label>
+                  <Etq err={errors.nivel_riesgo_id}>Nivel de Riesgo</Etq>
                   <select {...register('nivel_riesgo_id', { required: true, valueAsNumber: true })} className="input-field">
                     {nivelesRiesgo.map(n => <option key={n.id} value={n.id}>{n.nombre}</option>)}
                   </select>
@@ -499,8 +583,8 @@ const ClienteForm: React.FC = () => {
                     </div>
                     {esPep && (
                       <div>
-                        <label className="label-field">Descripción PEP *</label>
-                        <textarea {...register('descripcion_pep')} className="input-field h-20 resize-none" placeholder="Cargo, institución, ámbito..." />
+                        <Etq err={errors.descripcion_pep}>Descripción PEP</Etq>
+                        <textarea {...register('descripcion_pep', { validate: v => !watch('es_pep') || !!String(v ?? '').trim() || 'Si el cliente es PEP hay que describir el cargo.' })} className="input-field h-20 resize-none" placeholder="Cargo, institución, ámbito..." />
                       </div>
                     )}
                     <div className="flex items-center gap-3">
@@ -548,12 +632,12 @@ const ClienteForm: React.FC = () => {
                       <input
                         type="checkbox"
                         id={item.id}
-                        {...register(item.id as keyof Cliente)}
+                        {...register(item.id as keyof Cliente, item.required ? { validate: v => v === true || 'Debe aceptarse para dar de alta al cliente.' } : undefined)}
                         className="w-4 h-4 rounded mt-0.5 accent-primary-700"
                       />
                       <div>
                         <label htmlFor={item.id} className="text-sm font-medium text-gray-800 cursor-pointer">{item.label}</label>
-                        {item.required && <span className="text-red-500 ml-1 text-xs">*</span>}
+                        {item.required && <span className={errors[item.id as keyof Cliente] ? 'text-red-600 ml-1 font-extrabold' : 'text-red-500 ml-1 text-xs'}>*</span>}
                       </div>
                     </div>
                   ))}
@@ -579,14 +663,14 @@ const ClienteForm: React.FC = () => {
               )}
             </div>
             
-              <button
+              {isEdit && <button
                 type="button"
                 onClick={() => navigate(`/tarjetas/emitir?cliente=${id}`)}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm mr-4"
               >
                 <CreditCard size={18} />
                 Emitir Tarjeta
-              </button>
+              </button>}
             <button type="submit" disabled={saving} className="btn-success">
               {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? 'Guardando...' : isEdit ? 'Actualizar Cliente' : 'Registrar Cliente'}
