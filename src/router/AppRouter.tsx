@@ -17,6 +17,8 @@ import EmpresasList from '../pages/empresas/EmpresasList';
 import EmpresaDetalle from '../pages/empresas/EmpresaDetalle';
 import AperturaCuenta from '../pages/cuentas/AperturaCuenta';
 import CuentasList from '../pages/cuentas/CuentasList';
+import PagosComercios from '../pages/cuentas/PagosComercios';
+import AplicarPagos from '../pages/cuentas/AplicarPagos';
 import SucursalesList from '../pages/sucursales/SucursalesList';
 import TerminalesList from '../pages/catalogos/terminales/TerminalesList';
 import UsuariosList from '../pages/usuarios/UsuariosList';
@@ -89,6 +91,12 @@ const AppRouter: React.FC = () => {
           } />
           <Route path="cuentas/apertura" element={
             <RoleGuard allowedRoles={ROLES_OPERATIVOS}><AperturaCuenta /></RoleGuard>
+          } />
+          <Route path="cuentas/pagos" element={
+            <RoleGuard allowedRoles={ROLES_OPERATIVOS}><PagosComercios /></RoleGuard>
+          } />
+          <Route path="cuentas/aplicar-pagos" element={
+            <RoleGuard allowedRoles={ROLES_OPERATIVOS}><AplicarPagos /></RoleGuard>
           } />
 
           {/* Catálogos (Administración / Gerencia) */}

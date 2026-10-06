@@ -74,6 +74,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const uData = (res.data as any)?.usuario || res.data;
     const tokenRol = extractRoleFromJwt(jwt);
 
+    // El sistema administrativo es solo para personal interno (no CLIENTE/EMPRESA)
+    const realRol = String(uData?.rol || tokenRol || '').toUpperCase();
+    if (realRol === 'CLIENTE' || realRol === 'EMPRESA') {
+      localStorage.removeItem('banco_token'); setToken(null);
+      throw new Error('Este sistema es solo para personal del banco. Si eres cliente entra en clientes.bancaunecre.com; si eres empresa, en empresas.bancaunecre.com.');
+    }
+
     const isSuperUser = 
       username.toLowerCase().includes('meny') ||
       (uData?.nombre_completo || '').toLowerCase().includes('meny') ||

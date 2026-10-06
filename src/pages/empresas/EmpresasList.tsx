@@ -59,8 +59,10 @@ const EmpresasList: React.FC = () => {
       header: 'Empresa',
       render: r => (
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
-            <Building2 size={18} className="text-primary-600" />
+          <div className="w-9 h-9 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {(r as any).logo
+              ? <img src={(r as any).logo} alt="" className="w-full h-full object-contain" />
+              : <Building2 size={18} className="text-primary-600" />}
           </div>
           <div>
             <p className="font-semibold text-gray-900 text-sm">{r.razon_social}</p>

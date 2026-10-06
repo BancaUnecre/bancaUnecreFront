@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Edit2, Trash2, UserCheck, UserX, FolderOpen, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Edit2, Trash2, UserCheck, UserX, FolderOpen, Loader2, AlertCircle, RefreshCw, User } from 'lucide-react';
 import DataTable, { type Column } from '../../components/common/DataTable';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import type { Cliente } from '../../types';
@@ -72,9 +72,14 @@ const ClientesList: React.FC = () => {
       key: 'nombre',
       header: 'Nombre Completo',
       render: r => (
-        <span className="font-medium text-gray-900">
-          {r.nombre} {r.apellido_paterno} {r.apellido_materno ?? ''}
-        </span>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center flex-shrink-0">
+            {(r as any).foto
+              ? <img src={(r as any).foto} alt="" className="w-full h-full object-cover" />
+              : <User size={16} className="text-primary-600" />}
+          </div>
+          <span className="font-medium text-gray-900">{r.nombre} {r.apellido_paterno} {r.apellido_materno ?? ''}</span>
+        </div>
       ),
     },
     { key: 'curp', header: 'CURP', className: 'font-mono text-xs' },

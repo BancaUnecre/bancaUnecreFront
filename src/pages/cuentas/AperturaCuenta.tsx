@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Search, CheckCircle2, ChevronRight, CreditCard,
   PiggyBank, BarChart3, FileText, DollarSign, Check, Copy,
-  Users, Loader2, AlertCircle,
-} from 'lucide-react';
+  Users, Loader2, AlertCircle, Building2 } from 'lucide-react';
 import type { Cliente, Cuenta } from '../../types';
 import { clientesService } from '../../services/clientesService';
+import { empresasService } from '../../services/empresasService';
 import { cuentasService } from '../../services/cuentasService';
 import { nivelCuentaService } from '../../services/nivelCuentaService';
 import type { NivelCuenta } from '../../types';
@@ -79,6 +79,9 @@ const AperturaCuenta: React.FC = () => {
   const [loadingClientes, setLoadingClientes] = useState(false);
   const [nivelesCuenta, setNivelesCuenta] = useState<NivelCuenta[]>([]);
   const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [tipoTitular, setTipoTitular] = useState<'cliente' | 'empresa'>('cliente');
+  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [empresa, setEmpresa] = useState<any | null>(null);
   const [cuentasCliente, setCuentasCliente] = useState<Cuenta[]>([]);
   const [config, setConfig] = useState<CuentaConfig>({
     tipo_cuenta: '', moneda: 'MXN', nivel_cuenta_id: 1, saldo: 0, limite_credito: 0, dia_corte: 1, tasa_credito: 0,
@@ -111,9 +114,16 @@ const AperturaCuenta: React.FC = () => {
 
   useEffect(() => { searchClientes(''); }, [searchClientes]);
 
+  const searchEmpresas = useCallback(async (q: string) => {
+    setLoadingClientes(true);
+    try { const res = await empresasService.getAll({ buscar: q || undefined, limit: 50 } as any); const raw = res.data as any; setEmpresas(Array.isArray(raw) ? raw : (raw?.data ?? [])); }
+    catch { setEmpresas([]); } finally { setLoadingClientes(false); }
+  }, []);
+  useEffect(() => { if (tipoTitular === 'empresa') searchEmpresas(''); }, [tipoTitular, searchEmpresas]);
+
   const handleSearchChange = (q: string) => {
     setSearch(q);
-    searchClientes(q);
+    if (tipoTitular === 'empresa') searchEmpresas(q); else searchClientes(q);
   };
 
   const handleSelectCliente = async (c: Cliente) => {
@@ -136,14 +146,16 @@ const AperturaCuenta: React.FC = () => {
   };
 
   const handleConfirm = async () => {
-    if (!cliente) return;
+    if (tipoTitular === 'cliente' && !cliente) return;
+    if (tipoTitular === 'empresa' && !empresa) return;
     setProcessing(true);
     setApiError(null);
     const numero = genAccountNumber();
     const clabe = genCLABE(numero);
     try {
       await cuentasService.create({
-        cliente_id: cliente.id!,
+        cliente_id: tipoTitular === 'cliente' ? cliente!.id! : null,
+        empresa_id: tipoTitular === 'empresa' ? empresa!.id : null,
         numero_cuenta: numero,
         clabe,
         tipo_cuenta: config.tipo_cuenta as string,
@@ -208,69 +220,47 @@ const AperturaCuenta: React.FC = () => {
           {/* PASO 1: Seleccionar cliente */}
           {step === 1 && (
             <div className="space-y-4">
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setTipoTitular('cliente'); setEmpresa(null); setSearch(''); searchClientes(''); }}
+                  className={`px-4 py-2 rounded-lg text-sm border ${tipoTitular === 'cliente' ? 'bg-primary-50 border-primary-500 text-primary-800 font-medium' : 'border-gray-300 text-gray-600'}`}>Cliente</button>
+                <button type="button" onClick={() => { setTipoTitular('empresa'); setCliente(null); setSearch(''); searchEmpresas(''); }}
+                  className={`px-4 py-2 rounded-lg text-sm border ${tipoTitular === 'empresa' ? 'bg-primary-50 border-primary-500 text-primary-800 font-medium' : 'border-gray-300 text-gray-600'}`}>Empresa</button>
+              </div>
+
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={e => handleSearchChange(e.target.value)}
-                  className="input-field pl-9"
-                  placeholder="Buscar cliente por nombre, RFC o CURP..."
-                  autoFocus
-                />
+                <input type="text" value={search} onChange={e => handleSearchChange(e.target.value)} className="input-field pl-9"
+                  placeholder={tipoTitular === 'cliente' ? 'Buscar cliente por nombre, RFC o CURP...' : 'Buscar empresa por nombre o RFC...'} autoFocus />
               </div>
 
               <div className="border border-gray-200 rounded-xl overflow-hidden divide-y divide-gray-50 max-h-72 overflow-y-auto">
                 {loadingClientes ? (
-                  <div className="flex items-center justify-center py-10 gap-2 text-gray-400 text-sm">
-                    <Loader2 size={16} className="animate-spin" />Buscando...
-                  </div>
-                ) : clientes.length === 0 ? (
-                  <p className="text-center py-10 text-gray-400 text-sm">Sin resultados</p>
-                ) : clientes.map(c => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleSelectCliente(c)}
-                    className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-primary-50 transition-colors ${cliente?.id === c.id ? 'bg-primary-50 border-l-2 border-l-primary-600' : ''}`}
-                  >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                      {c.nombre[0]}{c.apellido_paterno[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm">{nombreCliente(c)}</p>
-                      <p className="text-xs text-gray-500 font-mono">{c.rfc} · {c.curp}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-gray-400">{cuentasCliente.length} cuentas</span>
+                  <div className="flex items-center justify-center py-10 gap-2 text-gray-400 text-sm"><Loader2 size={16} className="animate-spin" />Buscando...</div>
+                ) : tipoTitular === 'cliente' ? (
+                  clientes.length === 0 ? <p className="text-center py-10 text-gray-400 text-sm">Sin resultados</p>
+                  : clientes.map(c => (
+                    <button key={c.id} onClick={() => handleSelectCliente(c)} className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-primary-50 ${cliente?.id === c.id ? 'bg-primary-50 border-l-2 border-l-primary-600' : ''}`}>
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{c.nombre[0]}{c.apellido_paterno[0]}</div>
+                      <div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 text-sm">{nombreCliente(c)}</p><p className="text-xs text-gray-500 font-mono">{c.rfc} · {c.curp}</p></div>
                       {cliente?.id === c.id && <CheckCircle2 size={18} className="text-primary-600" />}
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))
+                ) : (
+                  empresas.length === 0 ? <p className="text-center py-10 text-gray-400 text-sm">Sin resultados</p>
+                  : empresas.map((e) => (
+                    <button key={e.id} onClick={() => setEmpresa(e)} className={`w-full flex items-center gap-4 px-4 py-3 text-left hover:bg-primary-50 ${empresa?.id === e.id ? 'bg-primary-50 border-l-2 border-l-primary-600' : ''}`}>
+                      <div className="w-10 h-10 rounded-lg bg-primary-100 overflow-hidden flex items-center justify-center flex-shrink-0">{e.logo ? <img src={e.logo} className="w-full h-full object-contain" alt="" /> : <Building2 size={18} className="text-primary-600" />}</div>
+                      <div className="flex-1 min-w-0"><p className="font-semibold text-gray-900 text-sm">{e.razon_social}</p><p className="text-xs text-gray-500 font-mono">{e.rfc}</p></div>
+                      {empresa?.id === e.id && <CheckCircle2 size={18} className="text-primary-600" />}
+                    </button>
+                  ))
+                )}
               </div>
 
-              {cliente && (
-                <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold">
-                      {cliente.nombre[0]}{cliente.apellido_paterno[0]}
-                    </div>
-                    <div>
-                      <p className="font-bold text-primary-900">{nombreCliente(cliente)}</p>
-                      <p className="text-xs text-primary-600">{cuentasCliente.length} cuenta(s) · Nivel {cliente.nivel_cuenta_id}</p>
-                    </div>
-                  </div>
-                  <CheckCircle2 className="text-primary-600" size={22} />
-                </div>
-              )}
-
               <div className="flex justify-end pt-2">
-                <button
-                  onClick={() => { if (cliente) setStep(2); }}
-                  disabled={!cliente}
-                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Siguiente <ChevronRight size={16} />
-                </button>
+                <button onClick={() => { if ((tipoTitular === 'cliente' && cliente) || (tipoTitular === 'empresa' && empresa)) setStep(2); }}
+                  disabled={tipoTitular === 'cliente' ? !cliente : !empresa}
+                  className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed">Siguiente <ChevronRight size={16} /></button>
               </div>
             </div>
           )}
@@ -436,11 +426,11 @@ const AperturaCuenta: React.FC = () => {
                 </div>
                 <div className="px-4 py-3 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary-700 flex items-center justify-center text-white font-bold">
-                    {cliente!.nombre[0]}{cliente!.apellido_paterno[0]}
+                    {tipoTitular === 'empresa' ? 'EM' : `${cliente!.nombre[0]}${cliente!.apellido_paterno[0]}`}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">{nombreCliente(cliente!)}</p>
-                    <p className="text-xs text-gray-500 font-mono">{cliente!.rfc} · {cliente!.curp}</p>
+                    <p className="font-bold text-gray-900">{tipoTitular === 'empresa' ? empresa!.razon_social : nombreCliente(cliente!)}</p>
+                    <p className="text-xs text-gray-500 font-mono">{tipoTitular === 'empresa' ? empresa!.rfc : `${cliente!.rfc} · ${cliente!.curp}`}</p>
                   </div>
                 </div>
               </div>
@@ -508,7 +498,7 @@ const AperturaCuenta: React.FC = () => {
                 <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-end">
                   <div>
                     <p className="text-primary-300 text-xs">Titular</p>
-                    <p className="text-white font-semibold text-sm">{nombreCliente(cliente!)}</p>
+                    <p className="text-white font-semibold text-sm">{tipoTitular === 'empresa' ? empresa!.razon_social : nombreCliente(cliente!)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-primary-300 text-xs">Saldo inicial</p>

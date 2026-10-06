@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, type FieldErrors } from 'react-hook-form';
-import { ArrowLeft, Save, User, MapPin, Phone, Briefcase, Shield, FileText, Loader2, AlertCircle, CreditCard } from 'lucide-react';
+import { ArrowLeft, Save, User, MapPin, Phone, Briefcase, Shield, FileText, Loader2, AlertCircle, CreditCard, Upload } from 'lucide-react';
 import type { Cliente, Estado, TipoIdentificacion, Ocupacion, NivelCuenta, NivelRiesgo } from '../../types';
 import { clientesService } from '../../services/clientesService';
 import { estadosService } from '../../services/estadosService';
@@ -10,6 +10,7 @@ import { ocupacionesService } from '../../services/ocupacionesService';
 import { nivelCuentaService } from '../../services/nivelCuentaService';
 import { nivelRiesgoService } from '../../services/nivelRiesgoService';
 import AvisoGuardarDialog, { type ProblemaGuardado } from '../../components/common/AvisoGuardarDialog';
+import LogoCropper from '../../components/LogoCropper';
 
 type Tab = 'personal' | 'domicilio' | 'contacto' | 'laboral' | 'kyc' | 'terminos';
 
@@ -62,6 +63,9 @@ const ClienteForm: React.FC = () => {
   const [loadingCliente, setLoadingCliente] = useState(isEdit);
   const [apiError, setApiError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ titulo?: string; descripcion?: string; problemas: ProblemaGuardado[] } | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [rawFoto, setRawFoto] = useState<string | null>(null);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
 
   const [estados, setEstados] = useState<Estado[]>([]);
   const [tiposId, setTiposId] = useState<TipoIdentificacion[]>([]);
@@ -128,6 +132,7 @@ const ClienteForm: React.FC = () => {
         const raw = res.data as any;
         const cliente = raw?.data ?? raw;
         reset(cliente);
+        setFotoPreview(cliente?.foto ?? null);
       } catch (e: any) {
         setApiError(e?.response?.data?.message ?? 'Error al cargar datos del cliente');
       } finally {
@@ -207,10 +212,21 @@ const ClienteForm: React.FC = () => {
       ])
     );
 
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setRawFoto(reader.result as string);
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+  const applyFoto = (dataUrl: string) => { setFotoPreview(dataUrl); setRawFoto(null); };
+
   const onSubmit = async (data: Cliente) => {
     setSaving(true);
     setApiError(null);
     const payload = sanitize(data as unknown as Record<string, unknown>) as unknown as Cliente;
+    (payload as any).foto = fotoPreview ?? null;
     try {
       if (isEdit) {
         await clientesService.update(Number(id), payload);
@@ -322,6 +338,24 @@ const ClienteForm: React.FC = () => {
             {/* TAB: Personal */}
             {activeTab === 'personal' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="md:col-span-2 lg:col-span-3 flex items-center gap-5 pb-5 mb-1 border-b border-gray-100">
+                  <div onClick={() => fotoInputRef.current?.click()} className="w-24 h-24 rounded-full border-2 border-dashed border-gray-300 hover:border-primary-400 flex flex-col items-center justify-center cursor-pointer overflow-hidden bg-white flex-shrink-0 group">
+                    {fotoPreview
+                      ? <img src={fotoPreview} className="w-full h-full object-cover" alt="Foto" />
+                      : <div className="flex flex-col items-center gap-1 text-gray-400 group-hover:text-primary-500"><User size={22} /><span className="text-xs">Foto</span></div>}
+                  </div>
+                  <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFotoChange} />
+                  {rawFoto && <LogoCropper src={rawFoto} round title="Ajustar fotografía" onApply={applyFoto} onCancel={() => setRawFoto(null)} />}
+                  <div>
+                    <h3 className="font-semibold text-gray-800 mb-1">Fotografía del cliente</h3>
+                    <p className="text-sm text-gray-500 mb-2">PNG, JPG · se muestra en círculo</p>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => fotoInputRef.current?.click()} className="btn-secondary text-xs py-1.5 px-3"><Upload size={13} />{fotoPreview ? 'Cambiar' : 'Subir'} foto</button>
+                      {fotoPreview && <button type="button" onClick={() => setRawFoto(fotoPreview)} className="btn-secondary text-xs py-1.5 px-3">Ajustar</button>}
+                      {fotoPreview && <button type="button" onClick={() => setFotoPreview(null)} className="text-xs py-1.5 px-3 rounded-lg border border-red-200 text-red-600 hover:bg-red-50">Quitar</button>}
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <Etq err={errors.nombre}>Nombre</Etq>
                   <input {...register('nombre', { required: 'Campo requerido' })} className={inputClass(errors.nombre)} placeholder="Nombre(s)" />

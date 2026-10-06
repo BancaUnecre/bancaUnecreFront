@@ -6,6 +6,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import type { Sucursal, Estado } from '../../types';
 import { sucursalesService } from '../../services/sucursalesService';
 import { estadosService } from '../../services/estadosService';
+import { empresasService } from '../../services/empresasService';
 import { X, Save } from 'lucide-react';
 
 const SucursalesList: React.FC = () => {
@@ -16,6 +17,7 @@ const SucursalesList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [estados, setEstados] = useState<Estado[]>([]);
+  const [empresas, setEmpresas] = useState<any[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Sucursal | null>(null);
   const [deleteItem, setDeleteItem] = useState<Sucursal | null>(null);
@@ -50,6 +52,10 @@ const SucursalesList: React.FC = () => {
       const raw = res.data as any;
       setEstados(Array.isArray(raw) ? raw : (raw?.data ?? []));
     }).catch(() => {});
+    empresasService.getAll({ page: 1, limit: 1000 } as any).then(res => {
+      const raw = res.data as any;
+      setEmpresas(Array.isArray(raw) ? raw : (raw?.data ?? []));
+    }).catch(() => {});
   }, []);
 
   const openNew = () => {
@@ -68,6 +74,7 @@ const SucursalesList: React.FC = () => {
 
   const validate = () => {
     const errs: Record<string, string> = {};
+    if (!form.empresa_id) errs.empresa_id = 'La empresa es requerida';
     if (!form.numero) errs.numero = 'Número es requerido';
     if (!form.nombre) errs.nombre = 'Nombre es requerido';
     setFormErrors(errs);
@@ -80,6 +87,7 @@ const SucursalesList: React.FC = () => {
     setError(null);
     try {
       const payload = {
+        empresa_id: form.empresa_id,
         numero: form.numero!,
         nombre: form.nombre!,
         direccion: form.direccion,
@@ -107,7 +115,7 @@ const SucursalesList: React.FC = () => {
       await sucursalesService.delete(deleteItem.id);
       await loadData();
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? e?.message ?? 'Error al desactivar');
+      setError(e?.response?.data?.message ?? e?.message ?? 'Error al eliminar');
     } finally {
       setDeleting(false);
       setDeleteItem(null);
@@ -121,6 +129,7 @@ const SucursalesList: React.FC = () => {
   const columns: Column<Sucursal>[] = [
     { key: 'id', header: 'ID', className: 'w-16 text-gray-500' },
     { key: 'numero', header: 'Número', className: 'font-mono font-semibold text-primary-700' },
+    { key: 'empresa_nombre', header: 'Empresa', render: r => { const em = empresas.find((e: any) => e.id === (r as any).empresa_id); return em ? <span className="text-sm text-gray-700">{em.razon_social}</span> : <span className="text-gray-400">—</span>; } },
     {
       key: 'nombre',
       header: 'Sucursal',
@@ -195,7 +204,7 @@ const SucursalesList: React.FC = () => {
                 <button onClick={() => openEdit(row)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
                   <Edit2 size={15} />
                 </button>
-                <button onClick={() => setDeleteItem(row)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Desactivar">
+                <button onClick={() => setDeleteItem(row)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
                   <Trash2 size={15} />
                 </button>
               </>
@@ -215,6 +224,18 @@ const SucursalesList: React.FC = () => {
 
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? 'Editar Sucursal' : 'Nueva Sucursal'} size="lg">
         <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className="label-field">Empresa <span className="text-red-500">*</span></label>
+            <select
+              value={form.empresa_id ?? ''}
+              onChange={e => setForm(f => ({ ...f, empresa_id: e.target.value ? Number(e.target.value) : undefined }))}
+              className={`input-field ${formErrors.empresa_id ? 'border-red-400' : ''}`}
+            >
+              <option value="">Seleccionar empresa...</option>
+              {empresas.map((em: any) => <option key={em.id} value={em.id}>{em.razon_social}</option>)}
+            </select>
+            {formErrors.empresa_id && <p className="text-red-500 text-xs mt-1">{formErrors.empresa_id}</p>}
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label-field">Número <span className="text-red-500">*</span></label>
@@ -289,7 +310,7 @@ const SucursalesList: React.FC = () => {
         onClose={() => setDeleteItem(null)}
         onConfirm={handleDelete}
         loading={deleting}
-        message={`¿Desactivar la sucursal "${deleteItem?.nombre}"?`}
+        message={`¿Eliminar la sucursal "${deleteItem?.nombre}"? Esta acción no se puede deshacer.`}
       />
     </div>
   );

@@ -5,9 +5,8 @@ import { isAdmin, isGerenteOrAdmin } from '../../utils/rbac';
 import {
   LayoutDashboard, Users, BookOpen, ChevronDown, ChevronRight,
   MapPin, CreditCard, Shield, Briefcase, IdCard, Building2,
-  Factory, ArrowLeftRight, FileBarChart2, Globe, PlusCircle, Activity, ArrowDownCircle, ArrowUpCircle,
-  ListOrdered, UserCog, QrCode, ShieldCheck, MonitorSmartphone, Settings
-} from 'lucide-react';
+  Factory, PlusCircle,
+  ListOrdered, UserCog, MonitorSmartphone, Settings, Banknote, HandCoins } from 'lucide-react';
 
 interface SidebarProps {
   open: boolean;
@@ -22,25 +21,11 @@ const catalogosItems = [
   { to: '/catalogos/tipo-identificacion',label: 'Tipo Identificación', icon: IdCard },
 ];
 
-const baseOperacionesItems = [
-  { to: '/operaciones/transferencias', label: 'Transferencias',         icon: ArrowLeftRight },
-  { to: '/operaciones/estado-cuenta',  label: 'Estado de Cuenta',       icon: FileBarChart2 },
-  { to: '/operaciones/spei',           label: 'Transf. Otros Bancos',   icon: Globe },
-  { to: '/operaciones/vales',          label: 'Generador de Vales',     icon: QrCode },
-  { to: '/operaciones/deposito',       label: 'Depositar a cuenta',     icon: ArrowDownCircle },
-  { to: '/operaciones/retiro',         label: 'Retirar de cuenta',       icon: ArrowUpCircle },
-  { to: '/operaciones/cobranza',       label: 'Cobranza y Cortes',      icon: FileBarChart2 },
-  { to: '/operaciones/abonos-credito', label: 'Abonos a Créditos',      icon: CreditCard },
-];
-
 const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const { user } = useAuth();
   const location = useLocation();
   const [catalogsOpen, setCatalogsOpen] = useState(() =>
     location.pathname.startsWith('/catalogos')
-  );
-  const [operacionesOpen, setOperacionesOpen] = useState(() =>
-    location.pathname.startsWith('/operaciones')
   );
 
   const isSuperUser = 
@@ -50,12 +35,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
   const adminRole = isSuperUser || isAdmin(user?.rol);
   const gerenteOrAdminRole = isSuperUser || isGerenteOrAdmin(user?.rol);
 
-  // Operaciones dinámicas según rol: 'Autorizar Vales' solo visible para Gerencia o Administradores
-  const operacionesItems = [
-    ...baseOperacionesItems.slice(0, 4),
-    ...(gerenteOrAdminRole ? [{ to: '/operaciones/vales/autorizar', label: 'Autorizar Vales', icon: ShieldCheck }] : []),
-    ...baseOperacionesItems.slice(4)
-  ];
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
@@ -107,26 +86,15 @@ const Sidebar: React.FC<SidebarProps> = ({ open, onClose }) => {
             <ListOrdered size={18} />Consulta de Cuentas
           </NavLink>
 
-          {/* Operaciones submenu */}
-          <div>
-            <button
-              onClick={() => setOperacionesOpen(o => !o)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-primary-100 hover:bg-primary-700/60 hover:text-white transition-all"
-            >
-              <Activity size={18} />
-              <span className="flex-1 text-left">Operaciones</span>
-              {operacionesOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            </button>
-            {operacionesOpen && (
-              <div className="ml-4 mt-0.5 space-y-0.5 border-l border-primary-700 pl-3">
-                {operacionesItems.map(item => (
-                  <NavLink key={item.to} to={item.to} className={submenuClass} onClick={onClose}>
-                    <item.icon size={15} />{item.label}
-                  </NavLink>
-                ))}
-              </div>
-            )}
-          </div>
+          <NavLink to="/cuentas/pagos" className={navLinkClass} onClick={onClose}>
+            <Banknote size={18} />Pagos
+          </NavLink>
+
+          <NavLink to="/cuentas/aplicar-pagos" className={navLinkClass} onClick={onClose}>
+            <HandCoins size={18} />Aplicar Pagos
+          </NavLink>
+
+          {/* Operaciones: movido al portal de clientes/empresas (clientes.bancaunecre.com) */}
 
           {/* Sección de Gestión y Administración (Gerencia y Admins) */}
           {gerenteOrAdminRole && (

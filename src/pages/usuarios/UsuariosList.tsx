@@ -9,6 +9,8 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import type { UsuarioSistema, Sucursal } from '../../types';
 import { usuariosSistemaService } from '../../services/usuariosSistemaService';
 import { sucursalesService } from '../../services/sucursalesService';
+import { clientesService } from '../../services/clientesService';
+import { empresasService } from '../../services/empresasService';
 
 const ROL_STYLES: Record<string, string> = {
   ADMINISTRADOR: 'bg-red-100 text-red-700',
@@ -33,6 +35,26 @@ const UsuariosList: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState<Partial<UsuarioSistema & { contrasena: string }>>({ activo: true, rol: 'ADMINISTRADOR' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [tipo, setTipo] = useState<'admin' | 'cliente' | 'empresa'>('admin');
+  const [busca, setBusca] = useState('');
+  const [resultados, setResultados] = useState<any[]>([]);
+  const [buscando, setBuscando] = useState(false);
+  const [selLabel, setSelLabel] = useState('');
+
+  useEffect(() => {
+    if (tipo === 'admin' || busca.trim() === '') { setResultados([]); return; }
+    const t = setTimeout(async () => {
+      setBuscando(true);
+      try {
+        const res = tipo === 'cliente'
+          ? await clientesService.getAll({ buscar: busca, limit: 10 } as any)
+          : await empresasService.getAll({ buscar: busca, limit: 10 } as any);
+        const raw: any = res.data;
+        setResultados(Array.isArray(raw) ? raw : (raw?.data ?? []));
+      } catch { setResultados([]); } finally { setBuscando(false); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [busca, tipo]);
 
   const limit = 20;
 
@@ -65,6 +87,7 @@ const UsuariosList: React.FC = () => {
     setEditItem(null);
     setForm({ activo: true, rol: 'ADMINISTRADOR' });
     setFormErrors({});
+    setTipo('admin'); setBusca(''); setResultados([]); setSelLabel('');
     setModalOpen(true);
   };
 
@@ -72,6 +95,10 @@ const UsuariosList: React.FC = () => {
     setEditItem(item);
     setForm({ ...item, contrasena: '' });
     setFormErrors({});
+    const r = String(item.rol || '').toUpperCase();
+    const tp = r === 'CLIENTE' ? 'cliente' : r === 'EMPRESA' ? 'empresa' : 'admin';
+    setTipo(tp as any); setBusca(''); setResultados([]);
+    setSelLabel(tp === 'cliente' && item.cliente_id ? `Cliente #${item.cliente_id}` : tp === 'empresa' && item.empresa_id ? `Empresa #${item.empresa_id}` : '');
     setModalOpen(true);
   };
 
@@ -93,10 +120,17 @@ const UsuariosList: React.FC = () => {
       const payload: any = {
         nombre_usuario: form.nombre_usuario!,
         nombre_completo: form.nombre_completo!,
-        rol: form.rol as UsuarioSistema['rol'],
-        sucursal_id: form.sucursal_id,
         activo: form.activo ?? true,
       };
+      if (tipo === 'cliente') {
+        if (!form.cliente_id) { setFormErrors({ sel: 'Selecciona el cliente' }); setSaving(false); return; }
+        payload.rol = 'CLIENTE'; payload.cliente_id = form.cliente_id; payload.empresa_id = null; payload.sucursal_id = null;
+      } else if (tipo === 'empresa') {
+        if (!form.empresa_id) { setFormErrors({ sel: 'Selecciona la empresa' }); setSaving(false); return; }
+        payload.rol = 'EMPRESA'; payload.empresa_id = form.empresa_id; payload.cliente_id = null; payload.sucursal_id = null;
+      } else {
+        payload.rol = form.rol as UsuarioSistema['rol']; payload.sucursal_id = form.sucursal_id; payload.cliente_id = null; payload.empresa_id = null;
+      }
       if (form.contrasena) payload.contrasena = form.contrasena;
 
       if (editItem?.id) {
@@ -120,7 +154,7 @@ const UsuariosList: React.FC = () => {
       await usuariosSistemaService.delete(deleteItem.id);
       await loadData();
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? e?.message ?? 'Error al desactivar');
+      setError(e?.response?.data?.message ?? e?.message ?? 'Error al eliminar');
     } finally {
       setDeleting(false);
       setDeleteItem(null);
@@ -221,7 +255,7 @@ const UsuariosList: React.FC = () => {
                 <button onClick={() => openEdit(row)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar">
                   <Edit2 size={15} />
                 </button>
-                <button onClick={() => setDeleteItem(row)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Desactivar">
+                <button onClick={() => setDeleteItem(row)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
                   <Trash2 size={15} />
                 </button>
               </>
@@ -276,32 +310,75 @@ const UsuariosList: React.FC = () => {
             />
             {formErrors.contrasena && <p className="text-red-500 text-xs mt-1">{formErrors.contrasena}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label-field">Rol <span className="text-red-500">*</span></label>
-              <select
-                value={form.rol ?? 'ADMINISTRADOR'}
-                onChange={e => setForm(f => ({ ...f, rol: e.target.value as UsuarioSistema['rol'] }))}
-                className="input-field"
-              >
-                <option value="OPERADOR">Operador</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="ADMINISTRADOR">Administrador</option>
-                <option value="CUMPLIMIENTO">Cumplimiento</option>
-              </select>
-            </div>
-            <div>
-              <label className="label-field">Sucursal</label>
-              <select
-                value={form.sucursal_id ?? ''}
-                onChange={e => setForm(f => ({ ...f, sucursal_id: e.target.value ? Number(e.target.value) : undefined }))}
-                className="input-field"
-              >
-                <option value="">Sin sucursal</option>
-                {sucursales.filter(s => s.activa).map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-              </select>
+          {/* Tipo de usuario */}
+          <div>
+            <label className="label-field">Tipo de usuario <span className="text-red-500">*</span></label>
+            <div className="flex gap-2">
+              {([['admin', 'Administración'], ['cliente', 'Cliente'], ['empresa', 'Empresa']] as const).map(([t, l]) => (
+                <button key={t} type="button"
+                  onClick={() => { setTipo(t); setBusca(''); setResultados([]); setSelLabel(''); setForm(f => ({ ...f, cliente_id: undefined, empresa_id: undefined })); }}
+                  className={`px-3 py-1.5 rounded-lg text-sm border ${tipo === t ? 'bg-primary-50 border-primary-500 text-primary-800 font-medium' : 'border-gray-300 text-gray-600'}`}>{l}</button>
+              ))}
             </div>
           </div>
+
+          {tipo === 'admin' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="label-field">Rol <span className="text-red-500">*</span></label>
+                <select value={form.rol ?? 'ADMINISTRADOR'} onChange={e => setForm(f => ({ ...f, rol: e.target.value as UsuarioSistema['rol'] }))} className="input-field">
+                  <option value="OPERADOR">Operador</option>
+                  <option value="SUPERVISOR">Supervisor</option>
+                  <option value="ADMINISTRADOR">Administrador</option>
+                  <option value="CUMPLIMIENTO">Cumplimiento</option>
+                </select>
+              </div>
+              <div>
+                <label className="label-field">Sucursal</label>
+                <select value={form.sucursal_id ?? ''} onChange={e => setForm(f => ({ ...f, sucursal_id: e.target.value ? Number(e.target.value) : undefined }))} className="input-field">
+                  <option value="">Sin sucursal</option>
+                  {sucursales.filter(s => s.activa).map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {(tipo === 'cliente' || tipo === 'empresa') && (
+            <div className="relative">
+              <label className="label-field">{tipo === 'cliente' ? 'Cliente' : 'Empresa'} asociado <span className="text-red-500">*</span></label>
+              {selLabel ? (
+                <div className="flex items-center justify-between input-field bg-primary-50 border-primary-300">
+                  <span className="text-sm font-medium text-primary-800">{selLabel}</span>
+                  <button type="button" onClick={() => { setSelLabel(''); setForm(f => ({ ...f, cliente_id: undefined, empresa_id: undefined })); }} className="text-xs text-red-600 font-medium">Cambiar</button>
+                </div>
+              ) : (
+                <>
+                  <input className="input-field" value={busca} onChange={e => setBusca(e.target.value)} placeholder={tipo === 'cliente' ? 'Buscar por nombre, CURP o RFC…' : 'Buscar por nombre o RFC…'} />
+                  {busca.trim() !== '' && (
+                    <div className="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-auto">
+                      {buscando ? <div className="p-3 text-center text-gray-400 text-sm">Buscando…</div>
+                        : resultados.length === 0 ? <div className="p-3 text-center text-gray-400 text-sm">Sin coincidencias</div>
+                        : resultados.map((r: any) => (
+                          <button key={r.id} type="button"
+                            onClick={() => {
+                              const label = tipo === 'cliente' ? `${r.nombre} ${r.apellido_paterno ?? ''}`.trim() : r.razon_social;
+                              setSelLabel(label); setResultados([]); setBusca('');
+                              setForm(f => ({ ...f, cliente_id: tipo === 'cliente' ? r.id : undefined, empresa_id: tipo === 'empresa' ? r.id : undefined, rol: (tipo === 'cliente' ? 'CLIENTE' : 'EMPRESA') as any }));
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-primary-50 text-sm border-b border-gray-50 last:border-0">
+                            <span className="font-medium text-gray-800">{tipo === 'cliente' ? `${r.nombre} ${r.apellido_paterno ?? ''} ${r.apellido_materno ?? ''}` : r.razon_social}</span>
+                            <span className="text-xs text-gray-400 block">{tipo === 'cliente' ? r.curp : r.rfc}</span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {formErrors.sel && <p className="text-red-500 text-xs mt-1">{formErrors.sel}</p>}
+              {tipo === 'cliente' && <p className="text-xs text-gray-400 mt-1">Un cliente solo puede tener un usuario.</p>}
+              {tipo === 'empresa' && <p className="text-xs text-gray-400 mt-1">Una empresa puede tener varios usuarios.</p>}
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
@@ -334,7 +411,7 @@ const UsuariosList: React.FC = () => {
         onClose={() => setDeleteItem(null)}
         onConfirm={handleDelete}
         loading={deleting}
-        message={`¿Desactivar al usuario "${deleteItem?.nombre_completo}"?`}
+        message={`¿Eliminar al usuario "${deleteItem?.nombre_completo}"? Esta acción no se puede deshacer.`}
       />
     </div>
   );

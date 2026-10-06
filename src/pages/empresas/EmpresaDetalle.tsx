@@ -8,6 +8,7 @@ import {
 import type { Empresa, EmpresaCliente, Cliente, Cuenta } from '../../types';
 import Modal from '../../components/common/Modal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import LogoCropper from '../../components/LogoCropper';
 import DataTable, { type Column } from '../../components/common/DataTable';
 import { empresasService } from '../../services/empresasService';
 import { empresaClientesService } from '../../services/empresaClientesService';
@@ -45,6 +46,7 @@ const EmpresaDetalle: React.FC = () => {
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoMime, setLogoMime] = useState<string>('');
+  const [rawImage, setRawImage] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [vinculaciones, setVinculaciones] = useState<EmpresaCliente[]>([]);
@@ -56,11 +58,8 @@ const EmpresaDetalle: React.FC = () => {
     if (!id || id === 'nuevo') return;
     setLoadingRes(true);
     try {
-      const res = await fetch(`https://bancaunecre.com/api/empresas-restricciones/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      const json = await res.json();
-      setRestricciones(json.data || []);
+      const res = await api.get(`/empresas-restricciones/${id}`);
+      setRestricciones((res.data as any)?.data || []);
     } catch(e) {}
     setLoadingRes(false);
   };
@@ -68,24 +67,17 @@ const EmpresaDetalle: React.FC = () => {
   const [addComercioId, setAddComercioId] = useState('');
   const addRestriccion = async () => {
     try {
-      const res = await fetch('https://bancaunecre.com/api/empresas-restricciones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ empresa_patron_id: Number(id), empresa_comercio_id: Number(addComercioId) })
-      });
-      const json = await res.json();
+      const res = await api.post('/empresas-restricciones', { empresa_patron_id: Number(id), empresa_comercio_id: Number(addComercioId) });
+      const json = res.data as any;
       if (!json.success) alert(json.message);
       else { setAddComercioId(''); fetchRestricciones(); }
-    } catch(e) {}
+    } catch(e: any) { alert(e?.response?.data?.message ?? 'Error al autorizar'); }
   };
 
   const removeRestriccion = async (resId: number) => {
     if(!confirm("¿Remover comercio autorizado?")) return;
     try {
-      await fetch(`https://bancaunecre.com/api/empresas-restricciones/${resId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      await api.delete(`/empresas-restricciones/${resId}`);
       fetchRestricciones();
     } catch(e) {}
   };
@@ -174,13 +166,15 @@ const EmpresaDetalle: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const mime = result.match(/:(.*?);/)?.[1] ?? 'image/png';
-      setLogoPreview(result);
-      setLogoMime(mime);
-    };
+    reader.onload = () => { setRawImage(reader.result as string); }; // abre el recorte
     reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const applyCrop = (dataUrl: string) => {
+    setLogoPreview(dataUrl);
+    setLogoMime('image/png');
+    setRawImage(null);
   };
 
   const onSubmit = async (data: Empresa) => {
@@ -518,7 +512,7 @@ const EmpresaDetalle: React.FC = () => {
                   className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 hover:border-primary-400 flex flex-col items-center justify-center cursor-pointer transition-colors overflow-hidden bg-white flex-shrink-0 group"
                 >
                   {logoPreview ? (
-                    <img src={logoPreview} className="w-full h-full object-cover" alt="Logo" />
+                    <img src={logoPreview} className="w-full h-full object-contain" alt="Logo" />
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-gray-400 group-hover:text-primary-500">
                       <Upload size={22} /><span className="text-xs">Logo</span>
@@ -526,6 +520,7 @@ const EmpresaDetalle: React.FC = () => {
                   )}
                 </div>
                 <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
+                {rawImage && <LogoCropper src={rawImage} onApply={applyCrop} onCancel={() => setRawImage(null)} />}
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-800 mb-1">Logotipo de la empresa</h3>
                   <p className="text-sm text-gray-500 mb-3">PNG, JPG, SVG · 200×200px recomendado</p>
@@ -533,6 +528,11 @@ const EmpresaDetalle: React.FC = () => {
                     <button type="button" onClick={() => logoInputRef.current?.click()} className="btn-secondary text-xs py-1.5 px-3">
                       <Upload size={13} />{logoPreview ? 'Cambiar' : 'Subir'} imagen
                     </button>
+                    {logoPreview && (
+                      <button type="button" onClick={() => setRawImage(logoPreview)} className="btn-secondary text-xs py-1.5 px-3">
+                        Ajustar
+                      </button>
+                    )}
                     {logoPreview && (
                       <button type="button" onClick={() => { setLogoPreview(null); setLogoMime(''); }} className="text-xs py-1.5 px-3 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 flex items-center gap-1">
                         <X size={13} />Quitar
