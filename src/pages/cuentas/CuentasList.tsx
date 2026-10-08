@@ -6,7 +6,8 @@ import { cuentasService } from '../../services/cuentasService';
 import MovimientosModal from '../../components/Cuentas/MovimientosModal';
 import TarjetasTerminalModal from '../../components/Cuentas/TarjetasTerminalModal';
 import EditarCuentaModal from '../../components/Cuentas/EditarCuentaModal';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 const fmtMoney = (n: number, currency = 'MXN') =>
   n.toLocaleString('es-MX', { style: 'currency', currency, minimumFractionDigits: 2 });
@@ -37,6 +38,8 @@ const CuentasList: React.FC = () => {
   const [selectedCuentaId, setSelectedCuentaId] = useState<number | null>(null);
   const [selectedTarjetaCuentaId, setSelectedTarjetaCuentaId] = useState<number | null>(null);
   const [cuentaParaEditar, setCuentaParaEditar] = useState<Cuenta | null>(null);
+  const [cuentaParaBorrar, setCuentaParaBorrar] = useState<Cuenta | null>(null);
+  const [borrando, setBorrando] = useState(false);
 
   const limit = 20;
 
@@ -57,6 +60,19 @@ const CuentasList: React.FC = () => {
   }, [page]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleBorrar = async () => {
+    if (!cuentaParaBorrar) return;
+    setBorrando(true);
+    try {
+      await cuentasService.delete(cuentaParaBorrar.id);
+      setCuentaParaBorrar(null);
+      await loadData();
+    } catch (e: any) {
+      setCuentaParaBorrar(null);
+      setError(e?.response?.data?.message ?? 'No se pudo borrar la cuenta');
+    } finally { setBorrando(false); }
+  };
 
   const filtered = data.filter(c =>
     [c.numero_cuenta, c.clabe, c.tipo_cuenta].some(v => v && v.toLowerCase().includes(search.toLowerCase()))
@@ -152,6 +168,13 @@ const CuentasList: React.FC = () => {
             <SmartphoneNfc size={14} />
             Terminal POS
           </button>
+          <button
+            onClick={() => setCuentaParaBorrar(r)}
+            title="Eliminar cuenta"
+            className="flex items-center justify-center px-2 py-1.5 text-xs font-medium bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       ),
     },
@@ -219,6 +242,13 @@ const CuentasList: React.FC = () => {
           onClose={() => setSelectedTarjetaCuentaId(null)}
         />
       )}
+      <ConfirmDialog
+        isOpen={!!cuentaParaBorrar}
+        onClose={() => setCuentaParaBorrar(null)}
+        onConfirm={handleBorrar}
+        loading={borrando}
+        message={`¿Eliminar la cuenta ${cuentaParaBorrar?.numero_cuenta ?? ''}? Solo se puede si no tiene movimientos. Esta acción no se puede deshacer.`}
+      />
       {cuentaParaEditar && (
         <EditarCuentaModal
           isOpen={true}
