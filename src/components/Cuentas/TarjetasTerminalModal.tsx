@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CreditCard, Lock, Unlock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, CreditCard, Lock, Unlock, Loader2, AlertCircle, CheckCircle2, Nfc } from 'lucide-react';
 import { terminalTarjetasService } from '../../services/terminalTarjetasService';
 
 interface Props {
@@ -14,6 +14,8 @@ const TarjetasTerminalModal: React.FC<Props> = ({ cuentaId, onClose }) => {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [numeroTarjeta, setNumeroTarjeta] = useState('');
+  const [leyendoNfc, setLeyendoNfc] = useState(false);
+  const [nfcError, setNfcError] = useState<string | null>(null);
   const [fechaVencimiento, setFechaVencimiento] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCancelForm, setShowCancelForm] = useState(false);
@@ -40,6 +42,19 @@ const TarjetasTerminalModal: React.FC<Props> = ({ cuentaId, onClose }) => {
   useEffect(() => {
     loadTarjeta();
   }, [cuentaId]);
+
+  // Lee la tarjeta desde el servicio local del lector NFC USB (http://127.0.0.1:3020).
+  const leerNfc = async () => {
+    setLeyendoNfc(true); setNfcError(null);
+    try {
+      const resp = await fetch('http://127.0.0.1:3020/nfc/leer');
+      const data = await resp.json();
+      if (data.success && data.numero_tarjeta) setNumeroTarjeta(data.numero_tarjeta);
+      else setNfcError(data.message || 'No se leyó ninguna tarjeta.');
+    } catch {
+      setNfcError('No se pudo conectar al lector NFC. ¿Está corriendo el servicio en esta PC?');
+    } finally { setLeyendoNfc(false); }
+  };
 
   const handleAsignar = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,7 +229,14 @@ const TarjetasTerminalModal: React.FC<Props> = ({ cuentaId, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Tarjeta (16 dígitos)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Número de Tarjeta (16 dígitos)</label>
+                  <button type="button" onClick={leerNfc} disabled={leyendoNfc}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary-600 hover:text-primary-800 disabled:opacity-50">
+                    {leyendoNfc ? <Loader2 size={13} className="animate-spin" /> : <Nfc size={13} />}
+                    {leyendoNfc ? 'Acerque la tarjeta...' : 'Read NFC'}
+                  </button>
+                </div>
                 <input 
                   type="text" 
                   maxLength={16}
@@ -224,6 +246,7 @@ const TarjetasTerminalModal: React.FC<Props> = ({ cuentaId, onClose }) => {
                   placeholder="0000 0000 0000 0000"
                   required
                 />
+                {nfcError && <p className="text-xs text-red-500 mt-1">{nfcError}</p>}
               </div>
 
               <div>
