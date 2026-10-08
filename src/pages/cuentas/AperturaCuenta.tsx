@@ -7,6 +7,7 @@ import {
 import type { Cliente, Cuenta } from '../../types';
 import { clientesService } from '../../services/clientesService';
 import { empresasService } from '../../services/empresasService';
+import { terminalTarjetasService } from '../../services/terminalTarjetasService';
 import { cuentasService } from '../../services/cuentasService';
 import { nivelCuentaService } from '../../services/nivelCuentaService';
 import type { NivelCuenta } from '../../types';
@@ -24,7 +25,9 @@ interface CuentaConfig {
   tasa_credito: number;
 }
 
-const genAccountNumber = () => '1000' + String(Date.now()).slice(-12).padStart(12, '0');
+const genAccountNumber = () => (String(Date.now()).slice(-7) + Math.floor(Math.random() * 1000).toString().padStart(3, '0')); // 10 dígitos
+// Número de tarjeta: BIN propio 415231 (reconocido por la terminal) + 10 dígitos = 16
+const genCardNumber = () => '415231' + Array.from({ length: 10 }, () => Math.floor(Math.random() * 10)).join('');
 // CLABE = 3 banco (014) + 3 ciudad (180) + 11 cuenta + 1 control = 18 dígitos
 const genCLABE = (acc: string) => '014180' + acc.slice(-11).padStart(11, '0') + '7';
 
@@ -87,7 +90,7 @@ const AperturaCuenta: React.FC = () => {
     tipo_cuenta: '', moneda: 'MXN', nivel_cuenta_id: 1, saldo: 0, limite_credito: 0, dia_corte: 1, tasa_credito: 0,
   });
   const [processing, setProcessing] = useState(false);
-  const [result, setResult] = useState<{ numero: string; clabe: string; folio: string } | null>(null);
+  const [result, setResult] = useState<{ numero: string; tarjeta: string; clabe: string; folio: string } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string | null>(null);
@@ -151,9 +154,10 @@ const AperturaCuenta: React.FC = () => {
     setProcessing(true);
     setApiError(null);
     const numero = genAccountNumber();
+    const tarjeta = genCardNumber();
     const clabe = genCLABE(numero);
     try {
-      await cuentasService.create({
+      const resCta = await cuentasService.create({
         cliente_id: tipoTitular === 'cliente' ? cliente!.id! : null,
         empresa_id: tipoTitular === 'empresa' ? empresa!.id : null,
         numero_cuenta: numero,
@@ -167,7 +171,12 @@ const AperturaCuenta: React.FC = () => {
         nivel_cuenta_id: config.nivel_cuenta_id,
         estatus: 1,
       } as any);
-      setResult({ numero, clabe, folio: `APT-${Date.now().toString().slice(-8)}` });
+      // Crear y asociar la tarjeta física (16 díg) a la cuenta recién creada.
+      const cuentaId = (resCta.data as any)?.data?.id ?? (resCta.data as any)?.id;
+      if (cuentaId) {
+        try { await terminalTarjetasService.create({ cuenta_id: cuentaId, numero_tarjeta: tarjeta, fecha_vencimiento: '12/30' } as any); } catch { /* la tarjeta puede vincularse luego */ }
+      }
+      setResult({ numero, tarjeta, clabe, folio: `APT-${Date.now().toString().slice(-8)}` });
       setStep(4);
     } catch (e: any) {
       const serverErr: string = e?.response?.data?.error ?? '';
@@ -492,7 +501,7 @@ const AperturaCuenta: React.FC = () => {
                 <p className="text-primary-300 text-xs font-semibold uppercase tracking-widest mb-1">Banco Unecre</p>
                 <p className="text-white/60 text-xs mb-4">{config.tipo_cuenta} · {config.moneda}</p>
                 <p className="text-2xl font-bold tracking-widest font-mono mb-1">
-                  {result.numero.match(/.{4}/g)?.join(' ')}
+                  {result.tarjeta.match(/.{4}/g)?.join(' ')}
                 </p>
                 <p className="text-primary-300 text-xs">CLABE: {result.clabe}</p>
                 <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-end">
@@ -509,6 +518,7 @@ const AperturaCuenta: React.FC = () => {
             </div>
 
             {[
+              { label: 'Número de Tarjeta', value: result.tarjeta, key: 'tarjeta' },
               { label: 'Número de Cuenta', value: result.numero, key: 'numero' },
               { label: 'CLABE Interbancaria', value: result.clabe, key: 'clabe' },
             ].map(item => (
