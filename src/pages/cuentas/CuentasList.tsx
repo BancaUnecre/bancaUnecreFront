@@ -99,7 +99,7 @@ const CuentasList: React.FC = () => {
       },
     },
     { key: 'clabe', header: 'CLABE', className: 'font-mono text-xs text-gray-700', render: r => r.clabe ?? <span className="text-gray-400">â€”</span> },
-    { key: 'cliente_id', header: 'Cliente ID', className: 'text-gray-600' },
+    { key: 'titular', header: 'Titular', className: 'text-gray-700 font-medium', render: (r: any) => r.titular || (r.cliente_id ? `Cliente ${r.cliente_id}` : (r.empresa_id ? `Empresa ${r.empresa_id}` : '—')) },
     
     {
       key: 'saldos',
