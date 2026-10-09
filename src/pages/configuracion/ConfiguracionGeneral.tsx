@@ -64,6 +64,8 @@ const ConfiguracionGeneral: React.FC = () => {
   const [mostrarEliminadosEje, setMostrarEliminadosEje] = useState(false);
   const [mantenimientoActivo, setMantenimientoActivo] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const correosIT = correos.filter(c => c.tipo === 'IT');
+  const correosEje = correos.filter(c => c.tipo === 'EJECUTIVO');
 
   // Estados de Crons
   const [cronsActivosMaster, setCronsActivosMaster] = useState(true);
