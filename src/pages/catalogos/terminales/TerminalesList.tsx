@@ -6,6 +6,7 @@ import ConfirmDialog from '../../../components/common/ConfirmDialog';
 import type { TerminalDispositivo, Sucursal } from '../../../types';
 import { terminalDispositivosService } from '../../../services/terminalDispositivosService';
 import { sucursalesService } from '../../../services/sucursalesService';
+import { cuentasService } from '../../../services/cuentasService';
 import { X, Save } from 'lucide-react';
 
 const TerminalesList: React.FC = () => {
@@ -16,6 +17,7 @@ const TerminalesList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
+  const [cuentas, setCuentas] = useState<any[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<TerminalDispositivo | null>(null);
   const [deleteItem, setDeleteItem] = useState<TerminalDispositivo | null>(null);
@@ -50,6 +52,10 @@ const TerminalesList: React.FC = () => {
       const raw = res.data as any;
       setSucursales(Array.isArray(raw) ? raw : (raw?.data ?? []));
     }).catch(() => {});
+    cuentasService.getAll({ page: 1, limit: 1000 } as any).then(res => {
+      const raw = res.data as any;
+      setCuentas(Array.isArray(raw) ? raw : (raw?.data ?? []));
+    }).catch(() => {});
   }, []);
 
   const openNew = () => {
@@ -69,6 +75,7 @@ const TerminalesList: React.FC = () => {
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!form.sucursal_id) errs.sucursal_id = 'Sucursal es requerida';
+    if (!(form as any).cuenta_destino_id) errs.cuenta_destino_id = 'La cuenta destino es requerida';
     if (!form.marca) errs.marca = 'Marca es requerida';
     if (!form.modelo) errs.modelo = 'Modelo es requerido';
     if (!form.direccion_mac) errs.direccion_mac = 'MAC/No. Serie es requerido';
@@ -83,6 +90,7 @@ const TerminalesList: React.FC = () => {
     try {
       const payload = {
         sucursal_id: form.sucursal_id!,
+        cuenta_destino_id: (form as any).cuenta_destino_id ?? null,
         marca: form.marca!,
         modelo: form.modelo!,
         direccion_mac: form.direccion_mac!,
@@ -274,6 +282,22 @@ const TerminalesList: React.FC = () => {
               {sucursales.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
             </select>
             {formErrors.sucursal_id && <p className="text-red-500 text-xs mt-1">{formErrors.sucursal_id}</p>}
+          </div>
+          <div>
+            <label className="label-field">Cuenta destino (empresa) <span className="text-red-500">*</span></label>
+            <select
+              value={(form as any).cuenta_destino_id ?? ''}
+              onChange={e => setForm(f => ({ ...f, cuenta_destino_id: e.target.value ? Number(e.target.value) : undefined } as any))}
+              className="input-field"
+            >
+              <option value="">Seleccionar cuenta de la empresa...</option>
+              {(() => {
+                const emp = sucursales.find(su => su.id === form.sucursal_id)?.empresa_id;
+                return cuentas.filter((c: any) => c.empresa_id && c.empresa_id === emp)
+                  .map((c: any) => <option key={c.id} value={c.id}>{c.numero_cuenta} — {c.tipo_cuenta}</option>);
+              })()}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">Cada venta en esta terminal abonará (adeudo de Unecre) a esta cuenta.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
