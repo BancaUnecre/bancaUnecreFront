@@ -1191,8 +1191,56 @@ const ConfiguracionGeneral: React.FC = () => {
         </div>
       )}
       </div>
+      <HardResetSection />
     </div>
   );
 };
+
+function HardResetSection() {
+  const [pass, setPass] = React.useState('');
+  const [confirmar, setConfirmar] = React.useState(false);
+  const [ejec, setEjec] = React.useState(false);
+  const [msg, setMsg] = React.useState<{ ok: boolean; text: string } | null>(null);
+  const run = async () => {
+    setEjec(true); setMsg(null);
+    try {
+      const api = (await import('../../services/api')).default;
+      const r = await api.post('/config-admin/hard-reset', { pass });
+      setMsg({ ok: true, text: (r.data as any)?.message || 'Sistema reiniciado.' });
+      setConfirmar(false); setPass('');
+    } catch (e: any) {
+      setMsg({ ok: false, text: e?.response?.data?.message || 'Error al reiniciar' });
+    } finally { setEjec(false); }
+  };
+  return (
+    <div className="card p-6 border-2 border-red-200 bg-red-50/40 mt-6 max-w-2xl">
+      <div className="flex items-center gap-2 mb-1"><Trash2 size={18} className="text-red-600" /><h3 className="text-lg font-bold text-red-700">Zona de peligro — Hard Reset</h3></div>
+      <p className="text-sm text-gray-600 mb-4">Borra <b>toda la data</b> del sistema (cuentas, clientes, empresas, movimientos, tarjetas, terminales…), resetea los IDs y deja solo el usuario <b>admin</b>. No se puede deshacer.</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <input type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="Contraseña de Hard Reset"
+          className="input-field max-w-xs" />
+        <button onClick={() => setConfirmar(true)} disabled={!pass || ejec}
+          className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg px-4 py-2 disabled:opacity-50">
+          <Trash2 size={16} />Hard Reset
+        </button>
+      </div>
+      {msg && <p className={`text-sm mt-3 ${msg.ok ? 'text-emerald-700' : 'text-red-600'}`}>{msg.text}</p>}
+      {confirmar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+            <h4 className="font-bold text-red-700 text-lg mb-2">¿Borrar TODO el sistema?</h4>
+            <p className="text-sm text-gray-600 mb-5">Se eliminará toda la data y se recreará el usuario admin. Esta acción es irreversible.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmar(false)} className="btn-secondary flex-1 justify-center">Cancelar</button>
+              <button onClick={run} disabled={ejec} className="flex-1 inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg px-4 py-2">
+                {ejec ? <RefreshCw size={16} className="animate-spin" /> : <Trash2 size={16} />}{ejec ? 'Borrando...' : 'Sí, borrar todo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default ConfiguracionGeneral;
