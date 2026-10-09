@@ -1197,10 +1197,10 @@ const ConfiguracionGeneral: React.FC = () => {
 };
 
 function HardResetSection() {
-  const [pass, setPass] = React.useState('');
-  const [confirmar, setConfirmar] = React.useState(false);
-  const [ejec, setEjec] = React.useState(false);
-  const [msg, setMsg] = React.useState<{ ok: boolean; text: string } | null>(null);
+  const [pass, setPass] = useState('');
+  const [confirmar, setConfirmar] = useState(false);
+  const [ejec, setEjec] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const run = async () => {
     setEjec(true); setMsg(null);
     try {
