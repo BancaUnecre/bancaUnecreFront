@@ -1,5 +1,6 @@
 ﻿import EmitirTarjeta from '../pages/tarjetas/EmitirTarjeta';
 import React from 'react';
+import VersionChecker from '../components/VersionChecker';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import RoleGuard from '../components/Auth/RoleGuard';
@@ -49,6 +50,7 @@ const AppRouter: React.FC = () => {
 
   return (
     <BrowserRouter>
+      <VersionChecker />
       <Routes>
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />} />
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
